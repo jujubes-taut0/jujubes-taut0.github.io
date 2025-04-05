@@ -7,13 +7,21 @@
     fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/up", {
       method: "POST",
       keepalive: true
+    })
+    .then(response => {
+      console.log("Counter increment response:", response);
+    })
+    .catch(error => {
+      console.error("Counter increment error:", error);
     });
-    // Redirect immediately to the rickroll video
-    window.location.href = "rickroll.mp4";
+
+    // Short delay to help ensure the request fires (remove or reduce if not needed)
+    setTimeout(() => {
+      window.location.href = "rickroll.mp4";
+    }, 100);
   </script>
 </head>
 <body>
   <p>If you’re seeing this, something broke 😅</p>
 </body>
 </html>
-
