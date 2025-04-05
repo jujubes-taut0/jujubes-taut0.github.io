@@ -1,17 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>:)</title>
+  <title>:^)</title>
   <script>
     // CountAPI: tracks visits to this page
-     fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/up")
-    .then(res => res.json())
-    .then(data => {
-      console.log("Views:", data.count);
-    });
-
-    // Instant redirect to your video
-    window.location.href = "rickroll.mp4"; // or use external link if you prefer
+  navigator.sendBeacon("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/up");
+    window.location.href = "rickroll.mp4";
   </script>
 </head>
 <body>
