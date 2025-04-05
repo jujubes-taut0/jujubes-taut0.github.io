@@ -5,12 +5,14 @@
   <script>
     const timeout = setTimeout(() => {
     window.location.href = "rickroll.mp4";
-  }, 500); // backup redirect in case fetch hangs
+  }, 500); // fallback redirect if fetch hangs
 
     // CountAPI: tracks visits to this page
   fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/up")
       .finally(() => {
-        window.location.href = "rickroll.mp4";
+        clearTimeout(timeout); // stop the fallback
+        window.location.href = "rickroll.mp4"; // redirect after fetch
+       });
   </script>
 </head>
 <body>
