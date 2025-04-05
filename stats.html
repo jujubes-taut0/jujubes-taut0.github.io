@@ -24,15 +24,11 @@
   <div class="count" id="count">...</div>
 
   <script>
-    fetch("https://api.countapi.xyz/get/jujubes-taut0/rickroll")
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("count").textContent = data.value;
-      })
-      .catch(err => {
-        document.getElementById("count").textContent = "??";
-        console.error("Failed to load count:", err);
-      });
+   fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll")
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("count").textContent = data.count;
+    });
   </script>
 </body>
 </html>
