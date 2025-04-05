@@ -24,39 +24,11 @@
   <div class="count" id="count">...</div>
 
   <script>
-    const key = "jujubes-taut0/rickroll";
-    const apiURL = `https://api.counterapi.dev/v1/${key}`;
-    const webhookURL = "https://discord.com/api/webhooks/1357987605232357417/rjoMuphRJZcTnaCdXfaDajdcfMqMMdp9pnbVh32soRIL6InqjnMGSclTkg2soE-jV08n";
-
-    fetch(apiURL)
-      .then(res => res.json())
-      .then(data => {
-        const currentCount = data.count;
-        document.getElementById("count").textContent = currentCount;
-
-        const previousCount = localStorage.getItem("rickroll-count");
-
-        if (previousCount && currentCount > parseInt(previousCount)) {
-          // Count has increased — send webhook
-          fetch(webhookURL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: `🚨 Sucker count just increased 🚨 New total: **${currentCount}** 😈`
-            })
-          });
-        }
-
-        // Save latest count to localStorage
-        localStorage.setItem("rickroll-count", currentCount);
-      })
-      .catch(err => {
-        document.getElementById("count").textContent = "Error";
-        console.error("CountAPI error:", err);
-      });
-
-     // Always refresh every sixty seconds
-    setInterval(() => location.reload(), 60000);
+   fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll")
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("count").textContent = data.count;
+    });
   </script>
 </body>
 </html>
