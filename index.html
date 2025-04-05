@@ -3,9 +3,14 @@
 <head>
   <title>:^)</title>
   <script>
-    // CountAPI: tracks visits to this page
-  navigator.sendBeacon("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/up");
+    const timeout = setTimeout(() => {
     window.location.href = "rickroll.mp4";
+  }, 500); // backup redirect in case fetch hangs
+
+    // CountAPI: tracks visits to this page
+  fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/up")
+      .finally(() => {
+        window.location.href = "rickroll.mp4";
   </script>
 </head>
 <body>
