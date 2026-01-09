@@ -1,10 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta http-equiv="refresh" content="0; url=https://jujubes-taut0.github.io/rickroll.mp4">
-  <script>
-    // JS fallback for redirect
-    window.location.href = "rickroll.mp4";
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Totally Legit Page</title>
+    <style>
+        body {
+            margin: 0;
+            background: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        video {
+            width: 100%;
+            max-width: 1000px;
+            height: auto;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+    </style>
 </head>
+<body>
+    <!-- The Trap -->
+    <video id="vid" controls autoplay loop playsinline>
+        <source src="rickroll.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <script>
+        // 1. Attempt to increment the counter immediately
+        fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/up")
+            .then(res => res.json())
+            .then(data => console.log("New victim counted:", data.count))
+            .catch(err => console.error("Counter failed:", err));
+
+        // 2. Unmute fix attempt: interact to unmute
+        const vid = document.getElementById('vid');
+        document.body.addEventListener('click', () => {
+            vid.muted = false;
+            vid.play();
+        });
+    </script>
+</body>
 </html>

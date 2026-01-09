@@ -1,34 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-  <title>RICKROLL STATS</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rickroll Statistics</title>
   <style>
     body {
-      background-color: #111;
-      color: #facc15;
-      font-family: monospace;
+      background-color: #0f172a;
+      /* Dark sleek blue-black */
+      color: #38bdf8;
+      /* Cyan text */
+      font-family: 'Courier New', Courier, monospace;
       text-align: center;
-      padding-top: 5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
     }
+
+    .container {
+      border: 2px solid #38bdf8;
+      padding: 3rem;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
     h1 {
-      font-size: 2rem;
+      font-size: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid #38bdf8;
+      display: inline-block;
+      padding-bottom: 0.5rem;
     }
-    .count {
-      font-size: 4rem;
+
+    .count-box {
+      font-size: 6rem;
+      font-weight: bold;
+      color: #f472b6;
+      /* Pink accent */
+      text-shadow: 0 0 10px rgba(244, 114, 182, 0.5);
+    }
+
+    .label {
+      font-size: 1rem;
+      color: #94a3b8;
       margin-top: 1rem;
+    }
+
+    .footer {
+      margin-top: 3rem;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
+
 <body>
-  <h1>🧠 Suckers counted:</h1>
-  <div class="count" id="count">...</div>
+  <div class="container">
+    <h1>Total Victims</h1>
+    <div class="count-box" id="count">---</div>
+    <div class="label">Times the internet has been won</div>
+  </div>
+
+  <div class="footer">
+    <a href="index.html">Go back to the video</a> (at your own risk)
+  </div>
 
   <script>
-   fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll")
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById("count").textContent = data.count;
-    });
+    // Read-only endpoint (no /up)
+    fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll")
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("count").textContent = data.count;
+      })
+      .catch(err => {
+        document.getElementById("count").textContent = "ERR";
+        console.error(err);
+      });
   </script>
 </body>
+
 </html>
