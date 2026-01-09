@@ -67,13 +67,35 @@
     a:hover {
       text-decoration: underline;
     }
+
+    @keyframes pulse {
+      0% {
+        opacity: 0.3;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0.3;
+      }
+    }
+
+    .loading {
+      animation: pulse 1.5s infinite ease-in-out;
+      color: #94a3b8;
+      /* Muted loading color */
+      font-size: 4rem;
+      /* Slightly smaller for loading */
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
     <h1>Total Victims</h1>
-    <div class="count-box" id="count">---</div>
+    <div class="count-box loading" id="count">Loading...</div>
     <div class="label">Times the internet has been won</div>
   </div>
 
@@ -90,7 +112,9 @@
         return res.json();
       })
       .then(data => {
-        document.getElementById("count").textContent = data.count;
+        const el = document.getElementById("count");
+        el.textContent = data.count;
+        el.classList.remove("loading");
       })
       .catch(err => {
         document.getElementById("count").textContent = "ERR";
