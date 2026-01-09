@@ -4,47 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wait for it...</title>
-    <link rel="stylesheet" href="style.css">
+    <!-- Instant Redirect Meta Tag (Backup for JS) -->
+    <meta http-equiv="refresh" content="0; url=rickroll.mp4">
+    <title>Loading...</title>
 </head>
 
 <body>
-    <div class="container">
-        <video id="trap-video" autoplay loop playsinline>
-            <source src="rickroll.mp4" type="video/mp4">
-            Your browser does not support video.
-        </video>
-    </div>
-
     <script>
-        // Count the victim
-        fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/up").catch(console.error);
+        // 1. Fire-and-forget tracking
+        // This runs in the background even if the page unloads immediately
+        navigator.sendBeacon("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/up");
 
-        const video = document.getElementById('trap-video');
-
-        // Robust Autoplay Strategy:
-        // 1. Try to play unmuted directly (rarely works, but worth a shot)
-        video.muted = false;
-        video.play().catch(error => {
-            console.log("Unmuted autoplay blocked. Trying muted...");
-
-            // 2. Fallback: Play Muted (usually works)
-            video.muted = true;
-            video.play().then(() => {
-                // If muted play works, we wait for a click to unmute
-                document.addEventListener('click', () => {
-                    video.muted = false;
-                    // Reset to start if it was looping silently
-                    video.currentTime = 0;
-                }, { once: true });
-            }).catch(e => {
-                // 3. Last Resort: Wait for interaction to play at all
-                document.addEventListener('click', () => {
-                    video.muted = false;
-                    video.play();
-                }, { once: true });
-            });
-        });
+        // 2. Instant JS Redirect
+        window.location.replace("rickroll.mp4");
     </script>
 </body>
 
