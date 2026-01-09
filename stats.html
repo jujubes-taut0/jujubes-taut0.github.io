@@ -97,6 +97,7 @@
     <h1>Total Victims</h1>
     <div class="count-box loading" id="count">Loading...</div>
     <div class="label">Times the internet has been won</div>
+    <div class="timestamp" id="last-updated" style="margin-top: 2rem; color: #64748b; font-size: 0.9rem;"></div>
   </div>
 
   <div class="footer">
@@ -115,6 +116,13 @@
         const el = document.getElementById("count");
         el.textContent = data.count;
         el.classList.remove("loading");
+
+        // Display Last Updated Time
+        if (data.updated_at) {
+          const date = new Date(data.updated_at);
+          const timeStr = date.toLocaleString();
+          document.getElementById("last-updated").textContent = `Last Victim: ${timeStr}`;
+        }
       })
       .catch(err => {
         document.getElementById("count").textContent = "ERR";
