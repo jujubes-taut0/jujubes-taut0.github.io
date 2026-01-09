@@ -83,14 +83,21 @@
 
   <script>
     // Read-only endpoint (no /up)
-    fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll")
-      .then(res => res.json())
+    // Note: Added trailing slash to avoid 301 redirect issues
+    fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/")
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         document.getElementById("count").textContent = data.count;
       })
       .catch(err => {
         document.getElementById("count").textContent = "ERR";
-        console.error(err);
+        console.error("Counter API Error:", err);
+        // Optional: show error details on hover or in small text
+        const label = document.querySelector('.label');
+        if (label) label.title = err.message;
       });
   </script>
 </body>
