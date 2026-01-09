@@ -105,8 +105,8 @@
 
   <script>
     // Read-only endpoint (no /up)
-    // Note: Added trailing slash to avoid 301 redirect issues
-    fetch("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/")
+    // We add a timestamp query param to prevent browser caching of the JSON response
+    fetch(`https://api.counterapi.dev/v1/jujubes-taut0/rickroll/?v=${Date.now()}`)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
