@@ -296,7 +296,8 @@
     .search-wrap {
       flex: 1;
       display: flex;
-      gap: 6px
+      gap: 6px;
+      position: relative
     }
 
     .search-input {
@@ -347,6 +348,99 @@
       color: var(--text-muted);
       margin-left: 8px;
       min-width: 80px
+    }
+
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 70px;
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, .15);
+      border-radius: var(--radius-sm);
+      margin-top: 4px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .5)
+    }
+
+    .autocomplete-list.visible {
+      display: block
+    }
+
+    .autocomplete-item {
+      padding: 10px 14px;
+      font-size: .82rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, .05);
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .autocomplete-item:last-child {
+      border-bottom: none
+    }
+
+    .autocomplete-item:hover {
+      background: rgba(59, 130, 246, 0.25);
+      color: #fff;
+    }
+
+    /* Search result marker pulse */
+    .search-marker-dot {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255, 60, 90, 0.95);
+      border: 3px solid #fff;
+      box-shadow: 0 0 12px rgba(255, 60, 90, 0.8), 0 0 30px rgba(255, 60, 90, 0.4), 0 0 60px rgba(255, 60, 90, 0.2);
+      z-index: 900;
+    }
+
+    .search-marker-dot::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      margin-top: -25px;
+      margin-left: -25px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 60, 90, 0.7);
+      animation: searchRing 1.8s ease-out infinite;
+    }
+
+    .search-marker-dot::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 80px;
+      height: 80px;
+      margin-top: -40px;
+      margin-left: -40px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 60, 90, 0.35);
+      animation: searchRing 1.8s ease-out 0.4s infinite;
+    }
+
+    @keyframes searchRing {
+      0% {
+        transform: scale(0.5);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(1.5);
+        opacity: 0;
+      }
     }
 
     /* Map */
@@ -887,18 +981,18 @@
         <div>
           <div class="header-title">San Francisco Live Microclimate Monitor</div>
           <div class="header-sub">Powered by <a href="https://open-meteo.com" target="_blank"
-              rel="noopener">Open-Meteo</a></div>
+              rel="noopener noreferrer">Open-Meteo</a></div>
         </div>
       </div>
       <div class="header-right">
         <div class="agent-badge"><span class="pulse-dot"></span> AGENT ACTIVE</div>
         <div class="header-ts">Last updated: <span class="mono" id="sf-last-updated">—</span><br>Next poll in <span
-            class="mono" id="sf-countdown">60</span>s</div>
+            class="mono" id="sf-countdown">60:00</span></div>
       </div>
     </div>
     <div class="stats-bar" id="sf-stats">
       <div class="stat-card">
-        <div class="stat-label">�� Warmest Right Now</div>
+        <div class="stat-label">🔥 Warmest Right Now</div>
         <div class="stat-value" id="sf-warmest">—</div>
       </div>
       <div class="stat-card">
@@ -926,9 +1020,10 @@
       <div class="map-col">
         <div class="map-controls">
           <div class="search-wrap">
-            <input type="text" class="search-input" id="sf-search-input" placeholder="Search address..."
-              maxlength="120">
+            <input type="text" class="search-input" id="sf-search-input" placeholder="Search address..." maxlength="120"
+              aria-label="Search SF address">
             <button class="search-btn" id="sf-search-btn">🔍 Search</button>
+            <div class="autocomplete-list" id="sf-autocomplete"></div>
           </div>
           <select class="nbr-select" id="sf-nbr-select">
             <option value="">— Jump to neighborhood —</option>
@@ -982,13 +1077,13 @@
         <div>
           <div class="header-title">Lake Tahoe Ski Resort Monitor</div>
           <div class="header-sub">Powered by <a href="https://open-meteo.com" target="_blank"
-              rel="noopener">Open-Meteo</a></div>
+              rel="noopener noreferrer">Open-Meteo</a></div>
         </div>
       </div>
       <div class="header-right">
         <div class="agent-badge"><span class="pulse-dot"></span> AGENT ACTIVE</div>
         <div class="header-ts">Last updated: <span class="mono" id="tahoe-last-updated">—</span><br>Next poll in <span
-            class="mono" id="tahoe-countdown">60</span>s</div>
+            class="mono" id="tahoe-countdown">60:00</span></div>
       </div>
     </div>
     <div class="stats-bar" id="tahoe-stats">
@@ -1022,8 +1117,9 @@
         <div class="map-controls">
           <div class="search-wrap">
             <input type="text" class="search-input" id="tahoe-search-input" placeholder="Search address..."
-              maxlength="120">
+              maxlength="120" aria-label="Search Tahoe address">
             <button class="search-btn" id="tahoe-search-btn">🔍 Search</button>
+            <div class="autocomplete-list" id="tahoe-autocomplete"></div>
           </div>
           <select class="nbr-select" id="tahoe-resort-select">
             <option value="">— Jump to resort —</option>
@@ -1036,10 +1132,13 @@
         <div class="map-legend"><span>Powder</span>
           <div class="legend-gradient tahoe-legend-gradient"></div><span>Slush Risk</span>
         </div>
-        <div class="snow-chart" id="tahoe-snow-chart" style="display:none">
+        <div class="snow-chart" id="tahoe-snow-chart">
           <div class="snow-chart-title">7-Day Snowfall History</div>
-          <div class="snow-bars" id="tahoe-snow-bars"></div>
-          <div class="snow-total">7-Day Total: <span id="tahoe-snow-total">—</span></div>
+          <div style="text-align:center;color:var(--text-muted);font-size:.78rem;padding:18px 0" id="tahoe-snow-hint">⛷
+            Select a resort above to view snowfall history</div>
+          <div class="snow-bars" id="tahoe-snow-bars" style="display:none"></div>
+          <div class="snow-total" id="tahoe-snow-total-wrap" style="display:none">7-Day Total: <span
+              id="tahoe-snow-total">—</span></div>
         </div>
       </div>
       <div class="agent-col">
@@ -1083,18 +1182,18 @@
 
       /* ============ DATA ============ */
       const SF_NEIGHBORHOODS = [
-        { id: "outer-sunset", name: "Outer Sunset", zone: "Fog Belt West", lat: 37.7516, lon: -122.5076, emoji: "🌫" },
+        { id: "outer-sunset", name: "Outer Sunset", zone: "Fog Belt West", lat: 37.7516, lon: -122.5076, emoji: "🌊🌬️" },
         { id: "inner-sunset", name: "Inner Sunset", zone: "Fog Belt", lat: 37.7625, lon: -122.4694, emoji: "🌫" },
-        { id: "outer-richmond", name: "Outer Richmond", zone: "Fog Belt North", lat: 37.7785, lon: -122.5065, emoji: "🌫" },
+        { id: "outer-richmond", name: "Outer Richmond", zone: "Fog Belt North", lat: 37.7785, lon: -122.5065, emoji: "🍜" },
         { id: "inner-richmond", name: "Inner Richmond", zone: "Transitional", lat: 37.7804, lon: -122.4645, emoji: "🌤" },
         { id: "mission", name: "The Mission", zone: "Warm Pocket", lat: 37.7599, lon: -122.4148, emoji: "🌟" },
-        { id: "castro", name: "Castro", zone: "Warm Pocket", lat: 37.7610, lon: -122.4350, emoji: "🌟" },
-        { id: "noe-valley", name: "Noe Valley", zone: "Warm Pocket", lat: 37.7479, lon: -122.4317, emoji: "🌟" },
-        { id: "soma", name: "SoMa", zone: "Downtown Core", lat: 37.7785, lon: -122.4006, emoji: "��" },
+        { id: "castro", name: "Castro", zone: "Warm Pocket", lat: 37.7610, lon: -122.4350, emoji: "🌈" },
+        { id: "noe-valley", name: "Noe Valley", zone: "Warm Pocket", lat: 37.7479, lon: -122.4317, emoji: "☕🌿" },
+        { id: "soma", name: "SoMa", zone: "Downtown Core", lat: 37.7785, lon: -122.4006, emoji: "🎧🍸" },
         { id: "marina", name: "Marina", zone: "Bayside", lat: 37.8030, lon: -122.4360, emoji: "⛵" },
         { id: "north-beach", name: "North Beach", zone: "Downtown North", lat: 37.8067, lon: -122.4102, emoji: "🏖" },
-        { id: "embarcadero", name: "Embarcadero", zone: "Waterfront", lat: 37.7955, lon: -122.3937, emoji: "🌊" },
-        { id: "twin-peaks", name: "Twin Peaks", zone: "Elevated / Windy", lat: 37.7534, lon: -122.4477, emoji: "🌬" },
+        { id: "embarcadero", name: "Embarcadero", zone: "Waterfront", lat: 37.7955, lon: -122.3937, emoji: "🚋" },
+        { id: "twin-peaks", name: "Twin Peaks", zone: "Elevated / Windy", lat: 37.7534, lon: -122.4477, emoji: "⛰️" },
         { id: "haight", name: "Haight-Ashbury", zone: "Central", lat: 37.7697, lon: -122.4481, emoji: "☮" },
         { id: "glen-park", name: "Glen Park", zone: "Bowl / Sheltered", lat: 37.7334, lon: -122.4330, emoji: "🌿" },
         { id: "potrero-hill", name: "Potrero Hill", zone: "Sunny Pocket", lat: 37.7600, lon: -122.3990, emoji: "🌞" }
@@ -1114,6 +1213,19 @@
       ];
 
       const WEATHER_CODES = { 0: "☀️ Clear", 1: "🌤 Mostly Clear", 2: "⛅ Partly Cloudy", 3: "☁️ Overcast", 45: "🌫 Fog", 48: "🌫 Rime Fog", 51: "🌦 Light Drizzle", 53: "🌦 Drizzle", 55: "🌧 Heavy Drizzle", 61: "🌧 Light Rain", 63: "🌧 Rain", 65: "🌧 Heavy Rain", 71: "🌨 Light Snow", 73: "🌨 Snow", 75: "❄️ Heavy Snow", 77: "🌨 Snow Grains", 80: "🌦 Light Showers", 81: "🌧 Showers", 82: "⛈ Heavy Showers", 85: "🌨 Snow Showers", 86: "❄️ Heavy Snow Showers", 95: "⛈ Thunderstorm", 96: "⛈ Hail Storm", 99: "⛈ Heavy Hail" };
+
+      /* ============ CONSTANTS ============ */
+      const CM_TO_INCHES = 0.3937;        // centimetres → inches
+      const M_TO_INCHES = 39.37;          // metres → inches
+      const METERS_PER_MILE = 1609.34;    // metres per mile
+      const DEFAULT_VISIBILITY_M = 10000; // API doesn't return visibility; use 10 km default
+      const CANVAS_BLOB_RADIUS = 155;     // heatmap radial gradient radius (px)
+      const CANVAS_FILL_HALF = 160;       // half-width of gradient fill rect (px)
+      const MAX_LOG_ENTRIES = 200;        // max agent log entries before trimming
+      const POLL_INTERVAL_S = 3600;       // weather API poll interval (seconds)
+      const FETCH_TIMEOUT_MS = 15000;     // main weather fetch timeout (ms)
+      const SEARCH_TIMEOUT_MS = 8000;     // Nominatim search timeout (ms)
+      const SNOW_FETCH_TIMEOUT_MS = 10000;// snow history fetch timeout (ms)
 
       /* ============ UTILITY ============ */
       const allowlistRe = /^[a-zA-Z0-9\s,.\-#'&\/]+$/;
@@ -1147,7 +1259,6 @@
       let sfPrevData = new Map();
       let tahoePrevData = new Map();
       let sfDocsCount = 0;
-      let tahoeDocsCount = 0;
 
       /* ============ LOG FACTORY ============ */
       let sfLogEl = null, tahoeLogEl = null; // cached at init
@@ -1168,8 +1279,7 @@
         entry.appendChild(tsSpan);
         entry.appendChild(msgSpan);
         logEl.insertBefore(entry, logEl.firstChild);
-        // Keep max 200 entries
-        while (logEl.children.length > 200) logEl.removeChild(logEl.lastChild);
+        while (logEl.children.length > MAX_LOG_ENTRIES) logEl.removeChild(logEl.lastChild);
       }
       function sfLog(type, icon, msg) { _appendLog(sfLogEl, type, icon, msg); }
       function tahoeLog(type, icon, msg) { _appendLog(tahoeLogEl, type, icon, msg); }
@@ -1190,6 +1300,17 @@
       function sfTempColor(f) { return lerpColor(f, 55, 20, SF_PALETTE); }
       function tahoeTempColor(f) { return lerpColor(f, 18, 18, TAHOE_PALETTE); }
 
+      /* DRY helper: clear a tags container and render an array of {cls, text} tags */
+      function renderTags(containerEl, tags) {
+        while (containerEl.firstChild) containerEl.removeChild(containerEl.firstChild);
+        tags.forEach(t => {
+          const span = document.createElement('span');
+          span.className = 'tag ' + safeClass(t.cls);
+          span.textContent = t.text;
+          containerEl.appendChild(span);
+        });
+      }
+
       /* ============ FETCH WITH TIMEOUT ============ */
       function fetchWithTimeout(url, timeoutMs) {
         const controller = new AbortController();
@@ -1207,6 +1328,7 @@
         sfMap = L.map('sf-map', {
           center: [37.768, -122.447],
           zoom: 13,
+          minZoom: 12,
           maxBounds: [[37.7, -122.55], [37.84, -122.34]],
           maxBoundsViscosity: 1.0
         });
@@ -1244,6 +1366,7 @@
         tahoeMap = L.map('tahoe-map', {
           center: [39.1, -120.1],
           zoom: 8,
+          minZoom: 7,
           maxBounds: [[38.45, -120.65], [39.55, -119.65]],
           maxBoundsViscosity: 1.0
         });
@@ -1271,6 +1394,12 @@
         });
 
         setTimeout(() => tahoeMap.invalidateSize(), 200);
+
+        // Tahoe search + autocomplete (must be after tahoeMap is created)
+        const tahoeViewbox = '-120.65,38.45,-119.65,39.55';
+        el('tahoe-search-btn').addEventListener('click', () => doSearch('tahoe-search-input', 'tahoe-search-status', 'tahoe-autocomplete', tahoeMap, tahoeViewbox));
+        el('tahoe-search-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('tahoe-search-input', 'tahoe-search-status', 'tahoe-autocomplete', tahoeMap, tahoeViewbox); });
+        setupAutocomplete('tahoe-search-input', 'tahoe-autocomplete', tahoeMap, tahoeViewbox);
       }
 
       /* ============ CANVAS HEATMAP OVERLAY ============ */
@@ -1323,11 +1452,11 @@
               const pt = map.latLngToContainerPoint([item.lat, item.lon]);
               const temp = data.tempF;
               const color = colorFn(temp);
-              const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 155);
+              const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, CANVAS_BLOB_RADIUS);
               grad.addColorStop(0, color.replace('rgb', 'rgba').replace(')', ',0.35)'));
               grad.addColorStop(1, color.replace('rgb', 'rgba').replace(')', ',0)'));
               ctx.fillStyle = grad;
-              ctx.fillRect(pt.x - 160, pt.y - 160, 320, 320);
+              ctx.fillRect(pt.x - CANVAS_FILL_HALF, pt.y - CANVAS_FILL_HALF, CANVAS_FILL_HALF * 2, CANVAS_FILL_HALF * 2);
             });
 
             // Pass 2: Text labels
@@ -1382,7 +1511,6 @@
           const card = document.createElement('div');
           card.className = 'nb-card';
           card.id = 'sf-card-' + nb.id;
-          card.innerHTML = ''; // will populate via DOM
           // Header
           const hdr = document.createElement('div'); hdr.className = 'card-header';
           const hdrL = document.createElement('div');
@@ -1453,106 +1581,148 @@
         grid.appendChild(frag);
       }
 
-      /* ============ API FETCH ============ */
-      async function fetchSFData() {
-        const lats = SF_NEIGHBORHOODS.map(n => n.lat).join(',');
-        const lons = SF_NEIGHBORHOODS.map(n => n.lon).join(',');
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lons + '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,weather_code,precipitation&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/Los_Angeles';
+      /* ============ DATA CACHE (localStorage) ============ */
+      function saveCachedData(mode) {
         try {
-          const resp = await fetchWithTimeout(url, 15000);
-          const json = await resp.json();
-          const results = Array.isArray(json) ? json : [json];
-          sfLog('info', '📡', 'Poll status: fetched ' + results.length + ' locations');
-          results.forEach((r, i) => {
-            if (!r.current || i >= SF_NEIGHBORHOODS.length) return;
-            const nb = SF_NEIGHBORHOODS[i];
-            const c = r.current;
-            const data = {
-              tempF: safeNum(c.temperature_2m, -50, 150, null),
-              humidity: safeNum(c.relative_humidity_2m, 0, 100, null),
-              wind: safeNum(c.wind_speed_10m, 0, 200, null),
-              cloud: safeNum(c.cloud_cover, 0, 100, null),
-              weatherCode: safeNum(c.weather_code, 0, 99, 0),
-              precipitation: safeNum(c.precipitation, 0, 500, 0)
-            };
-            const prev = sfPrevData.get(nb.id);
-            // Log changes
-            if (prev) {
-              if (data.tempF !== null && prev.tempF !== null) {
-                const diff = data.tempF - prev.tempF;
-                if (Math.abs(diff) >= 2) {
-                  const arrow = diff > 0 ? '↑' : '↓';
-                  const word = diff > 0 ? 'warming' : 'cooling';
-                  sfLog('update', '🌡', nb.name + ': ' + word + ' ' + arrow + ' ' + Math.abs(diff).toFixed(1) + '°F');
-                }
-              }
-              if (data.cloud !== null && prev.cloud !== null && Math.abs(data.cloud - prev.cloud) >= 20) {
-                const word = data.cloud > prev.cloud ? 'fogging in' : 'clearing up';
-                sfLog('update', '🌫', nb.name + ': ' + word + ' (' + data.cloud + '% cloud)');
-              }
-              if (data.precipitation > 0 && (!prev.precipitation || prev.precipitation === 0)) {
-                sfLog('alert', '🌧', nb.name + ': rain start/intensifying (' + data.precipitation.toFixed(1) + 'mm)');
-              }
-              if (data.precipitation === 0 && prev.precipitation > 0) {
-                sfLog('update', '☀️', nb.name + ': rain stopped');
+          const dataMap = mode === 'sf' ? sfDataMap : tahoeDataMap;
+          const obj = {};
+          dataMap.forEach((v, k) => { obj[k] = v; });
+          localStorage.setItem('microclimate_' + mode, JSON.stringify({ ts: Date.now(), data: obj }));
+        } catch (e) { /* quota exceeded, ignore */ }
+      }
+      function loadCachedData(mode) {
+        try {
+          const raw = localStorage.getItem('microclimate_' + mode);
+          if (!raw) return false;
+          const parsed = JSON.parse(raw);
+          if (!parsed || !parsed.data) return false;
+          const dataMap = mode === 'sf' ? sfDataMap : tahoeDataMap;
+          const logFn = mode === 'sf' ? sfLog : tahoeLog;
+          const entries = Object.entries(parsed.data);
+          if (entries.length === 0) return false;
+          entries.forEach(([k, v]) => { dataMap.set(k, v); });
+          const age = Math.round((Date.now() - parsed.ts) / 60000);
+          logFn('info', '💾', 'Loaded cached data (' + age + ' min old, ' + entries.length + ' locations)');
+          if (mode === 'sf') updateSFUI(); else updateTahoeUI();
+          return true;
+        } catch (e) { return false; }
+      }
+
+      /* ============ API FETCH ============ */
+      const FETCH_CONFIGS = {
+        sf: {
+          items: SF_NEIGHBORHOODS,
+          fields: 'temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,weather_code,precipitation',
+          dataMap: sfDataMap,
+          getPrevData: () => sfPrevData,
+          setPrevData: m => { sfPrevData = m; },
+          logFn: sfLog,
+          updateUI: () => updateSFUI(),
+          parseItem: c => ({
+            tempF: safeNum(c.temperature_2m, -50, 150, null),
+            humidity: safeNum(c.relative_humidity_2m, 0, 100, null),
+            wind: safeNum(c.wind_speed_10m, 0, 200, null),
+            cloud: safeNum(c.cloud_cover, 0, 100, null),
+            weatherCode: safeNum(c.weather_code, 0, 99, 0),
+            precipitation: safeNum(c.precipitation, 0, 500, 0)
+          }),
+          logChanges: (name, data, prev, log) => {
+            if (data.tempF !== null && prev.tempF !== null) {
+              const diff = data.tempF - prev.tempF;
+              if (Math.abs(diff) >= 2) {
+                log('update', '🌡', name + ': ' + (diff > 0 ? 'warming ↑' : 'cooling ↓') + ' ' + Math.abs(diff).toFixed(1) + '°F');
               }
             }
-            sfDataMap.set(nb.id, data);
+            if (data.cloud !== null && prev.cloud !== null && Math.abs(data.cloud - prev.cloud) >= 20) {
+              log('update', '🌫', name + ': ' + (data.cloud > prev.cloud ? 'fogging in' : 'clearing up') + ' (' + data.cloud + '% cloud)');
+            }
+            if (data.precipitation > 0 && (!prev.precipitation || prev.precipitation === 0)) {
+              log('alert', '🌧', name + ': rain start/intensifying (' + data.precipitation.toFixed(1) + 'mm)');
+            }
+            if (data.precipitation === 0 && prev.precipitation > 0) {
+              log('update', '☀️', name + ': rain stopped');
+            }
+          }
+        },
+        tahoe: {
+          items: TAHOE_RESORTS,
+          fields: 'temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,weather_code,precipitation,snowfall,snow_depth',
+          dataMap: tahoeDataMap,
+          getPrevData: () => tahoePrevData,
+          setPrevData: m => { tahoePrevData = m; },
+          logFn: tahoeLog,
+          updateUI: () => updateTahoeUI(),
+          parseItem: c => ({
+            tempF: safeNum(c.temperature_2m, -60, 120, null),
+            humidity: safeNum(c.relative_humidity_2m, 0, 100, null),
+            wind: safeNum(c.wind_speed_10m, 0, 300, null),
+            cloud: safeNum(c.cloud_cover, 0, 100, null),
+            weatherCode: safeNum(c.weather_code, 0, 99, 0),
+            precipitation: safeNum(c.precipitation, 0, 500, 0),
+            snowfall: safeNum(c.snowfall, 0, 500, 0),
+            snowDepthM: safeNum(c.snow_depth, 0, 100, 0)
+          }),
+          logChanges: (name, data, prev, log) => {
+            if (data.snowfall > 0 && (!prev.snowfall || prev.snowfall === 0)) {
+              log('alert', '❄️', name + ': snow start! ' + data.snowfall.toFixed(1) + 'cm');
+            }
+            if (data.snowfall === 0 && prev.snowfall > 0) {
+              log('update', '🌤', name + ': snow stopped');
+            }
+            if (data.precipitation > 0 && data.tempF > 36) {
+              log('alert', '🌧', name + ': RAIN ON SNOW! temp=' + data.tempF.toFixed(0) + '°F');
+            }
+          }
+        }
+      };
+
+      async function fetchWeatherData(mode) {
+        const cfg = FETCH_CONFIGS[mode];
+        const lats = cfg.items.map(n => n.lat).join(',');
+        const lons = cfg.items.map(n => n.lon).join(',');
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lons + '&current=' + cfg.fields + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/Los_Angeles';
+        try {
+          const resp = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
+          if (resp.status === 429) {
+            cfg.logFn('alert', '🚫', 'API rate limit exceeded — daily quota hit. Data will load from cache if available.');
+            loadCachedData(mode);
+            return false;
+          }
+          if (!resp.ok) {
+            cfg.logFn('alert', '⚠️', 'API returned HTTP ' + resp.status);
+            loadCachedData(mode);
+            return false;
+          }
+          const json = await resp.json();
+          if (json.error) {
+            cfg.logFn('alert', '🚫', 'API error: ' + (json.reason || 'unknown'));
+            loadCachedData(mode);
+            return false;
+          }
+          const results = Array.isArray(json) ? json : [json];
+          cfg.logFn('info', '📡', 'Poll status: fetched ' + results.length + ' locations');
+          const prevData = cfg.getPrevData();
+          results.forEach((r, i) => {
+            if (!r.current || i >= cfg.items.length) return;
+            const item = cfg.items[i];
+            const data = cfg.parseItem(r.current);
+            const prev = prevData.get(item.id);
+            if (prev) cfg.logChanges(item.name, data, prev, cfg.logFn);
+            cfg.dataMap.set(item.id, data);
           });
-          sfPrevData = new Map([...sfDataMap].map(([k, v]) => [k, Object.assign({}, v)]));
-          updateSFUI();
+          cfg.setPrevData(new Map([...cfg.dataMap].map(([k, v]) => [k, Object.assign({}, v)])));
+          saveCachedData(mode);
+          cfg.updateUI();
           return true;
         } catch (e) {
-          sfLog('alert', '⚠️', 'API fetch failed: ' + e.message);
+          cfg.logFn('alert', '⚠️', 'API fetch failed: ' + e.message);
+          loadCachedData(mode);
           return false;
         }
       }
 
-      async function fetchTahoeData() {
-        const lats = TAHOE_RESORTS.map(r => r.lat).join(',');
-        const lons = TAHOE_RESORTS.map(r => r.lon).join(',');
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lons + '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,weather_code,precipitation,snowfall,snow_depth&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/Los_Angeles';
-        try {
-          const resp = await fetchWithTimeout(url, 15000);
-          const json = await resp.json();
-          const results = Array.isArray(json) ? json : [json];
-          tahoeLog('info', '📡', 'Poll status: fetched ' + results.length + ' resorts');
-          results.forEach((r, i) => {
-            if (!r.current || i >= TAHOE_RESORTS.length) return;
-            const resort = TAHOE_RESORTS[i];
-            const c = r.current;
-            const data = {
-              tempF: safeNum(c.temperature_2m, -60, 120, null),
-              humidity: safeNum(c.relative_humidity_2m, 0, 100, null),
-              wind: safeNum(c.wind_speed_10m, 0, 300, null),
-              cloud: safeNum(c.cloud_cover, 0, 100, null),
-              weatherCode: safeNum(c.weather_code, 0, 99, 0),
-              precipitation: safeNum(c.precipitation, 0, 500, 0),
-              snowfall: safeNum(c.snowfall, 0, 500, 0),
-              snowDepthM: safeNum(c.snow_depth, 0, 100, 0)
-            };
-            const prev = tahoePrevData.get(resort.id);
-            if (prev) {
-              if (data.snowfall > 0 && (!prev.snowfall || prev.snowfall === 0)) {
-                tahoeLog('alert', '❄️', resort.name + ': snow start! ' + data.snowfall.toFixed(1) + 'cm');
-              }
-              if (data.snowfall === 0 && prev.snowfall > 0) {
-                tahoeLog('update', '🌤', resort.name + ': snow stopped');
-              }
-              if (data.precipitation > 0 && data.tempF > 36) {
-                tahoeLog('alert', '🌧', resort.name + ': RAIN ON SNOW! temp=' + data.tempF.toFixed(0) + '°F');
-              }
-            }
-            tahoeDataMap.set(resort.id, data);
-          });
-          tahoePrevData = new Map([...tahoeDataMap].map(([k, v]) => [k, Object.assign({}, v)]));
-          updateTahoeUI();
-          return true;
-        } catch (e) {
-          tahoeLog('alert', '⚠️', 'API fetch failed: ' + e.message);
-          return false;
-        }
-      }
+      function fetchSFData() { return fetchWeatherData('sf'); }
+      function fetchTahoeData() { return fetchWeatherData('tahoe'); }
 
       /* ============ UPDATE UI ============ */
       function updateSFUI() {
@@ -1615,14 +1785,7 @@
           if (d.tempF >= 68) tags.push({ cls: 'tag-warm', text: 'Warm' });
           if (d.tempF < 55) tags.push({ cls: 'tag-cold', text: 'Cold' });
           if (d.humidity >= 80) tags.push({ cls: 'tag-humid', text: 'Humid' });
-          // Clear and rebuild tags
-          while (cached.tagsEl.firstChild) cached.tagsEl.removeChild(cached.tagsEl.firstChild);
-          tags.forEach(t => {
-            const span = document.createElement('span');
-            span.className = 'tag ' + safeClass(t.cls);
-            span.textContent = t.text;
-            cached.tagsEl.appendChild(span);
-          });
+          renderTags(cached.tagsEl, tags);
           // Accent border
           cached.card.classList.remove('hottest', 'coldest', 'foggiest', 'windiest');
           if (warmest && nb.id === warmest.id) cached.card.classList.add(safeClass('hottest'));
@@ -1684,8 +1847,8 @@
         TAHOE_RESORTS.forEach(r => {
           const d = tahoeDataMap.get(r.id);
           if (!d) return;
-          const snowIn = (d.snowfall || 0) * 0.3937;
-          const depthIn = (d.snowDepthM || 0) * 39.37;
+          const snowIn = (d.snowfall || 0) * CM_TO_INCHES;
+          const depthIn = (d.snowDepthM || 0) * M_TO_INCHES;
           if (snowIn > bsV) { bsV = snowIn; bestSnow = r; }
           if (depthIn > dpV) { dpV = depthIn; deepest = r; }
           if (d.tempF !== null && d.tempF < clV) { clV = d.tempF; coldestR = r; }
@@ -1702,7 +1865,6 @@
         if (warmestR) setText('tahoe-warmest', warmestR.name + ' ' + wmV.toFixed(1) + '°F');
         if (windiestR) setText('tahoe-windiest', windiestR.name + ' ' + wiV.toFixed(1) + ' mph');
         if (bestCond) setText('tahoe-best-cond', bestCond.name);
-        tahoeDocsCount++;
 
         // Differentials
         if (bestSnow) setText('tahoe-diff-snow', bestSnow.name + ' · ' + bsV.toFixed(1) + '"');
@@ -1727,13 +1889,12 @@
             cached.freezeEl.className = 'freeze-badge ' + safeClass('above');
             cached.freezeEl.textContent = '△ Above Freeze';
           }
-          const snowIn = (d.snowfall || 0) * 0.3937;
-          const depthIn = (d.snowDepthM || 0) * 39.37;
-          const visM = 10000; // default visibility if not provided
+          const snowIn = (d.snowfall || 0) * CM_TO_INCHES;
+          const depthIn = (d.snowDepthM || 0) * M_TO_INCHES;
           setText('tahoe-m-' + r.id + '-wind', d.wind !== null ? d.wind.toFixed(1) + ' mph' : '—');
           setText('tahoe-m-' + r.id + '-snowfall', snowIn.toFixed(1) + ' in');
           setText('tahoe-m-' + r.id + '-snowdepth', depthIn.toFixed(0) + ' in');
-          setText('tahoe-m-' + r.id + '-visibility', (visM / 1609.34).toFixed(1) + ' mi');
+          setText('tahoe-m-' + r.id + '-visibility', (DEFAULT_VISIBILITY_M / METERS_PER_MILE).toFixed(1) + ' mi');
           setText('tahoe-m-' + r.id + '-cloudcover', d.cloud !== null ? d.cloud.toFixed(0) + '%' : '—');
           setText('tahoe-m-' + r.id + '-condition', WEATHER_CODES[d.weatherCode] || '—');
 
@@ -1748,14 +1909,7 @@
           if (d.wind > 40) tags.push({ cls: 'tag-windhold', text: 'WIND HOLD' });
           if (d.tempF > 36 && d.precipitation > 0) tags.push({ cls: 'tag-rainonsnow', text: 'RAIN ON SNOW' });
           if (d.tempF > 36) tags.push({ cls: 'tag-slushrisk', text: 'SLUSH RISK' });
-
-          while (cached.tagsEl.firstChild) cached.tagsEl.removeChild(cached.tagsEl.firstChild);
-          tags.forEach(t => {
-            const span = document.createElement('span');
-            span.className = 'tag ' + safeClass(t.cls);
-            span.textContent = t.text;
-            cached.tagsEl.appendChild(span);
-          });
+          renderTags(cached.tagsEl, tags);
           cached.upd.textContent = 'Updated: ' + fmtTime();
 
           // Popup (unbind first to prevent leak)
@@ -1788,10 +1942,125 @@
         if (tahoeHeatLayer) tahoeHeatLayer.redraw();
       }
 
-      /* ============ SEARCH (Nominatim) ============ */
+      /* ============ SEARCH + AUTOCOMPLETE (Nominatim) ============ */
       let searchBusy = false;
       let lastSearchTime = 0;
-      async function doSearch(inputId, statusId, map, viewbox) {
+      const acTimers = {};
+      const searchMarkers = new Map(); // map instance -> marker
+
+      function placeSearchMarker(map, lat, lon, label) {
+        // Remove previous search marker for this map
+        if (searchMarkers.has(map)) {
+          map.removeLayer(searchMarkers.get(map));
+        }
+        const icon = L.divIcon({
+          className: 'search-marker-dot',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        const marker = L.marker([lat, lon], { icon: icon, zIndexOffset: 2000 }).addTo(map);
+        const popupEl = document.createElement('div');
+        const strong = document.createElement('strong');
+        strong.textContent = '📍 ' + (label || 'Search Result');
+        popupEl.appendChild(strong);
+        popupEl.appendChild(document.createElement('br'));
+        const loadingText = document.createTextNode('Loading weather…');
+        popupEl.appendChild(loadingText);
+        marker.bindPopup(popupEl);
+        marker.openPopup();
+        searchMarkers.set(map, marker);
+
+        // Fetch live weather for this location
+        const fields = (map === tahoeMap)
+          ? 'temperature_2m,wind_speed_10m,relative_humidity_2m,cloud_cover,weather_code,precipitation,snowfall'
+          : 'temperature_2m,wind_speed_10m,relative_humidity_2m,cloud_cover,weather_code,precipitation';
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=' + fields + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/Los_Angeles';
+        fetchWithTimeout(url, 10000).then(r => r.json()).then(data => {
+          if (!data.current) return;
+          const c = data.current;
+          popupEl.removeChild(loadingText);
+          const pre = document.createElement('pre');
+          pre.style.cssText = 'margin:4px 0;font-size:.78rem;font-family:JetBrains Mono,monospace;white-space:pre-wrap';
+          let text = (WEATHER_CODES[c.weather_code] || '—')
+            + '\nTemp: ' + (c.temperature_2m != null ? c.temperature_2m.toFixed(1) + '°F' : '—')
+            + '\nWind: ' + (c.wind_speed_10m != null ? c.wind_speed_10m.toFixed(1) + ' mph' : '—')
+            + '\nHumidity: ' + (c.relative_humidity_2m != null ? c.relative_humidity_2m + '%' : '—')
+            + '\nCloud: ' + (c.cloud_cover != null ? c.cloud_cover + '%' : '—');
+          if (map === tahoeMap && c.snowfall != null) {
+            text += '\nSnowfall: ' + (c.snowfall * 0.3937).toFixed(1) + ' in';
+          }
+          if (c.precipitation > 0) {
+            text += '\nPrecip: ' + c.precipitation.toFixed(1) + ' mm';
+          }
+          pre.textContent = text;
+          popupEl.appendChild(pre);
+          marker.getPopup().update();
+        }).catch(() => {
+          loadingText.textContent = lat.toFixed(4) + ', ' + lon.toFixed(4);
+        });
+      }
+
+      async function nominatimQuery(q, viewbox, limit) {
+        const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&viewbox=' + viewbox + '&bounded=1&limit=' + limit;
+        const resp = await fetchWithTimeout(url, 8000);
+        return resp.json();
+      }
+
+      function hideAutocomplete(acId) {
+        const acEl = el(acId);
+        if (acEl) { acEl.classList.remove('visible'); acEl.innerHTML = ''; }
+      }
+
+      function showAutocomplete(acId, results, map, inputId) {
+        const acEl = el(acId);
+        if (!acEl) return;
+        acEl.innerHTML = '';
+        if (results.length === 0) { acEl.classList.remove('visible'); return; }
+        results.forEach(r => {
+          const lat = safeNum(r.lat, -90, 90, null);
+          const lon = safeNum(r.lon, -180, 180, null);
+          if (lat === null || lon === null) return;
+          const item = document.createElement('div');
+          item.className = 'autocomplete-item';
+          item.textContent = r.display_name;
+          item.addEventListener('click', () => {
+            el(inputId).value = r.display_name;
+            map.flyTo([lat, lon], 15);
+            placeSearchMarker(map, lat, lon, r.display_name.split(',')[0]);
+            if (map === tahoeMap) loadSnowHistoryForCoords(lat, lon, r.display_name.split(',')[0]);
+            hideAutocomplete(acId);
+          });
+          acEl.appendChild(item);
+        });
+        acEl.classList.add('visible');
+      }
+
+      function setupAutocomplete(inputId, acId, map, viewbox) {
+        const input = el(inputId);
+        input.addEventListener('input', () => {
+          clearTimeout(acTimers[inputId]);
+          const q = (input.value || '').trim();
+          if (!q || q.length < 3 || !allowlistRe.test(q)) { hideAutocomplete(acId); return; }
+          acTimers[inputId] = setTimeout(async () => {
+            const now = Date.now();
+            if (now - lastSearchTime < 1000) return;
+            lastSearchTime = now;
+            try {
+              const data = await nominatimQuery(q, viewbox, 5);
+              showAutocomplete(acId, data, map, inputId);
+            } catch (_) { hideAutocomplete(acId); }
+          }, 300);
+        });
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Escape') hideAutocomplete(acId);
+        });
+        document.addEventListener('click', e => {
+          if (!input.contains(e.target) && !el(acId).contains(e.target)) hideAutocomplete(acId);
+        });
+      }
+
+      async function doSearch(inputId, statusId, acId, map, viewbox) {
+        hideAutocomplete(acId);
         const now = Date.now();
         if (searchBusy || now - lastSearchTime < 1000) {
           setText(statusId, 'Please wait...');
@@ -1807,14 +2076,15 @@
         lastSearchTime = Date.now();
         setText(statusId, 'Searching...');
         try {
-          const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&viewbox=' + viewbox + '&bounded=1&limit=1';
-          const resp = await fetchWithTimeout(url, 8000);
-          const data = await resp.json();
+          const data = await nominatimQuery(q, viewbox, 1);
           if (data.length > 0) {
             const lat = safeNum(data[0].lat, -90, 90, null);
             const lon = safeNum(data[0].lon, -180, 180, null);
             if (lat !== null && lon !== null) {
               map.flyTo([lat, lon], 15);
+              placeSearchMarker(map, lat, lon, data[0].display_name.split(',')[0]);
+              input.value = data[0].display_name;
+              if (map === tahoeMap) loadSnowHistoryForCoords(lat, lon, data[0].display_name.split(',')[0]);
               setText(statusId, '✓ Found');
             } else {
               setText(statusId, 'Invalid result');
@@ -1830,11 +2100,18 @@
       }
 
       /* ============ 7-DAY SNOWFALL CHART ============ */
-      async function loadSnowHistory(resortId) {
+      function loadSnowHistory(resortId) {
         const resort = TAHOE_RESORTS.find(r => r.id === resortId);
         if (!resort) return;
-        el('tahoe-snow-chart').style.display = 'block';
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + resort.lat + '&longitude=' + resort.lon + '&daily=snowfall_sum&past_days=7&forecast_days=0&timezone=America/Los_Angeles';
+        loadSnowHistoryForCoords(resort.lat, resort.lon, resort.name);
+      }
+
+      async function loadSnowHistoryForCoords(lat, lon, label) {
+        const hint = el('tahoe-snow-hint');
+        if (hint) hint.style.display = 'none';
+        el('tahoe-snow-bars').style.display = '';
+        el('tahoe-snow-total-wrap').style.display = '';
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&daily=snowfall_sum&past_days=7&forecast_days=0&timezone=America/Los_Angeles';
         try {
           const resp = await fetchWithTimeout(url, 10000);
           const data = await resp.json();
@@ -1847,13 +2124,12 @@
           let total = 0;
           days.forEach((day, i) => {
             const v = safeNum(vals[i], 0, 1000, 0);
-            const inches = v * 0.3937;
+            const inches = v * CM_TO_INCHES;
             total += inches;
             const wrap = document.createElement('div'); wrap.className = 'snow-bar-wrap';
             const bar = document.createElement('div'); bar.className = 'snow-bar';
             const pct = (v / maxVal) * 100;
             bar.style.height = Math.max(2, pct) + '%';
-            // Gradient fill #2563eb to #93c5fd
             const ratio = pct / 100;
             const r = Math.round(37 + (147 - 37) * ratio), g = Math.round(99 + (197 - 99) * ratio), b = Math.round(235 + (253 - 235) * ratio);
             bar.style.background = 'rgb(' + r + ',' + g + ',' + b + ')';
@@ -1863,23 +2139,24 @@
             barsEl.appendChild(wrap);
           });
           setText('tahoe-snow-total', total.toFixed(1) + ' inches');
-          tahoeLog('info', '📊', 'Loaded 7-day history for ' + resort.name);
+          tahoeLog('info', '📊', 'Loaded 7-day history for ' + label);
         } catch (e) {
           tahoeLog('alert', '⚠️', 'Failed to load snow history: ' + e.message);
         }
       }
 
       /* ============ POLLING ============ */
-      let sfCountdown = 60, tahoeCountdown = 60;
+      let sfCountdown = POLL_INTERVAL_S, tahoeCountdown = POLL_INTERVAL_S;
       let sfTimer, tahoeTimer;
+      function fmtCountdown(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 
       async function sfPollCycle() {
-        sfCountdown = 60;
+        sfCountdown = POLL_INTERVAL_S;
         sfLog('info', '🔄', 'Starting poll cycle...');
         await fetchSFData();
         sfTimer = setInterval(() => {
           sfCountdown--;
-          setText('sf-countdown', sfCountdown);
+          setText('sf-countdown', fmtCountdown(sfCountdown));
           if (sfCountdown <= 0) {
             clearInterval(sfTimer);
             sfPollCycle();
@@ -1888,12 +2165,12 @@
       }
 
       async function tahoePollCycle() {
-        tahoeCountdown = 60;
+        tahoeCountdown = POLL_INTERVAL_S;
         tahoeLog('info', '🔄', 'Starting poll cycle...');
         await fetchTahoeData();
         tahoeTimer = setInterval(() => {
           tahoeCountdown--;
-          setText('tahoe-countdown', tahoeCountdown);
+          setText('tahoe-countdown', fmtCountdown(tahoeCountdown));
           if (tahoeCountdown <= 0) {
             clearInterval(tahoeTimer);
             tahoePollCycle();
@@ -1924,19 +2201,17 @@
         el('tab-sf').addEventListener('click', () => switchTab('sf'));
         el('tab-tahoe').addEventListener('click', () => switchTab('tahoe'));
 
-        // SF search
-        el('sf-search-btn').addEventListener('click', () => doSearch('sf-search-input', 'sf-search-status', sfMap, '-122.540,37.845,-122.355,37.698'));
-        el('sf-search-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('sf-search-input', 'sf-search-status', sfMap, '-122.540,37.845,-122.355,37.698'); });
+        // SF search + autocomplete
+        const sfViewbox = '-122.540,37.845,-122.355,37.698';
+        el('sf-search-btn').addEventListener('click', () => doSearch('sf-search-input', 'sf-search-status', 'sf-autocomplete', sfMap, sfViewbox));
+        el('sf-search-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('sf-search-input', 'sf-search-status', 'sf-autocomplete', sfMap, sfViewbox); });
+        setupAutocomplete('sf-search-input', 'sf-autocomplete', sfMap, sfViewbox);
 
         // SF neighborhood dropdown
         el('sf-nbr-select').addEventListener('change', e => {
           const nb = sfLookup.get(e.target.value);
           if (nb && sfMap) sfMap.flyTo([nb.lat, nb.lon], 15);
         });
-
-        // Tahoe search
-        el('tahoe-search-btn').addEventListener('click', () => doSearch('tahoe-search-input', 'tahoe-search-status', tahoeMap, '-120.65,38.45,-119.65,39.55'));
-        el('tahoe-search-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('tahoe-search-input', 'tahoe-search-status', tahoeMap, '-120.65,38.45,-119.65,39.55'); });
 
         // Tahoe resort dropdown
         el('tahoe-resort-select').addEventListener('change', e => {
