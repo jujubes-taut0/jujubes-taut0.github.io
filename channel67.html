@@ -1,1063 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description"
-    content="SF Microclimate Monitor — Live Agent Dashboard tracking San Francisco microclimates and Lake Tahoe ski conditions in real time.">
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.open-meteo.com https://nominatim.openstreetmap.org https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org; img-src 'self' data: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+  <meta name="description" content="SF Microclimate Monitor — Live Agent Dashboard tracking San Francisco microclimates and Lake Tahoe ski conditions in real time.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.open-meteo.com https://nominatim.openstreetmap.org https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org; img-src 'self' data: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
   <meta http-equiv="Referrer-Policy" content="no-referrer">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+  <!-- Note: CSP unsafe-inline is required while CSS/JS are inline in this single-file app.
+       If split into separate files, replace with nonce-based or hash-based CSP. -->
   <title>SF Microclimate Monitor — Live Agent Dashboard</title>
   <link rel="stylesheet" href="vendor/leaflet.css">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0
-    }
-
-    :root {
-      --bg-primary: #0a0d14;
-      --bg-secondary: #111520;
-      --bg-card: #161b28;
-      --text-primary: #e8edf5;
-      --text-secondary: #8a97b8;
-      --text-muted: #4a5570;
-      --accent-gold: #f5a623;
-      --accent-blue: #4a9eff;
-      --accent-teal: #2dd4bf;
-      --accent-fog: #94a3b8;
-      --accent-warm: #fb923c;
-      --accent-cool: #60a5fa;
-      --accent-green: #4ade80;
-      --radius: 14px;
-      --radius-sm: 10px;
-    }
-
-    html {
-      font-size: 14px
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      min-height: 100vh;
-      overflow-x: hidden
-    }
-
-    code,
-    .mono {
-      font-family: 'JetBrains Mono', monospace
-    }
-
-    a {
-      color: var(--accent-blue);
-      text-decoration: none
-    }
-
-    a:hover {
-      text-decoration: underline
-    }
-
-    /* Animations */
-    @keyframes pulse-green {
-
-      0%,
-      100% {
-        box-shadow: 0 0 0 0 rgba(74, 222, 128, .7)
-      }
-
-      70% {
-        box-shadow: 0 0 0 8px rgba(74, 222, 128, 0)
-      }
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(-20px)
-      }
-
-      to {
-        opacity: 1;
-        transform: translateX(0)
-      }
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0
-      }
-
-      to {
-        opacity: 1
-      }
-    }
-
-    /* Tabs */
-    .tab-bar {
-      display: flex;
-      gap: 4px;
-      padding: 8px 24px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid rgba(255, 255, 255, .06)
-    }
-
-    .tab-btn {
-      padding: 10px 24px;
-      border: none;
-      background: transparent;
-      color: var(--text-secondary);
-      font-family: 'Inter', sans-serif;
-      font-size: .95rem;
-      font-weight: 500;
-      cursor: pointer;
-      border-radius: 8px 8px 0 0;
-      transition: all .25s
-    }
-
-    .tab-btn:hover {
-      color: var(--text-primary);
-      background: rgba(255, 255, 255, .04)
-    }
-
-    .tab-btn.active {
-      color: var(--text-primary);
-      background: var(--bg-card);
-      border-bottom: 2px solid var(--accent-blue)
-    }
-
-    .tab-content {
-      display: none;
-      animation: fadeIn .3s ease
-    }
-
-    .tab-content.active {
-      display: block
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 24px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid rgba(255, 255, 255, .06)
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 14px
-    }
-
-    .logo-badge {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent-blue), var(--accent-teal));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.3rem
-    }
-
-    .header-title {
-      font-size: 1.25rem;
-      font-weight: 700
-    }
-
-    .header-sub {
-      font-size: .8rem;
-      color: var(--text-secondary)
-    }
-
-    .header-sub a {
-      color: var(--accent-blue)
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      font-size: .85rem
-    }
-
-    .agent-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      background: rgba(74, 222, 128, .1);
-      border: 1px solid rgba(74, 222, 128, .25);
-      border-radius: 20px;
-      color: var(--accent-green);
-      font-weight: 600;
-      font-size: .8rem
-    }
-
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent-green);
-      animation: pulse-green 2s infinite
-    }
-
-    .header-ts {
-      color: var(--text-secondary);
-      text-align: right;
-      line-height: 1.6
-    }
-
-    .header-ts .mono {
-      color: var(--text-primary);
-      font-size: .82rem
-    }
-
-    /* Stats Bar */
-    .stats-bar {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 12px;
-      padding: 16px 24px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid rgba(255, 255, 255, .06)
-    }
-
-    .stat-card {
-      background: var(--bg-card);
-      border-radius: var(--radius-sm);
-      padding: 14px 16px;
-      border: 1px solid rgba(255, 255, 255, .06);
-      transition: transform .2s, box-shadow .2s
-    }
-
-    .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, .3)
-    }
-
-    .stat-label {
-      font-size: .7rem;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px
-    }
-
-    .stat-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1.2rem;
-      font-weight: 600
-    }
-
-    /* Main Layout */
-    .main-layout {
-      display: grid;
-      grid-template-columns: 1fr 370px;
-      gap: 0;
-      min-height: calc(100vh - 260px)
-    }
-
-    .map-col {
-      padding: 20px 24px;
-      background: var(--bg-primary)
-    }
-
-    .agent-col {
-      padding: 20px;
-      background: var(--bg-secondary);
-      border-left: 1px solid rgba(255, 255, 255, .06);
-      overflow-y: auto
-    }
-
-    /* Map Controls */
-    .map-controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 12px;
-      align-items: center
-    }
-
-    .search-wrap {
-      flex: 1;
-      display: flex;
-      gap: 6px;
-      position: relative
-    }
-
-    .search-input {
-      flex: 1;
-      padding: 10px 14px;
-      background: var(--bg-card);
-      border: 1px solid rgba(255, 255, 255, .1);
-      border-radius: var(--radius-sm);
-      color: var(--text-primary);
-      font-family: 'Inter', sans-serif;
-      font-size: .85rem;
-      outline: none;
-      transition: border-color .2s
-    }
-
-    .search-input:focus {
-      border-color: var(--accent-blue)
-    }
-
-    .search-btn,
-    .nbr-select {
-      padding: 10px 16px;
-      background: var(--bg-card);
-      border: 1px solid rgba(255, 255, 255, .1);
-      border-radius: var(--radius-sm);
-      color: var(--text-primary);
-      font-family: 'Inter', sans-serif;
-      font-size: .85rem;
-      cursor: pointer;
-      transition: all .2s
-    }
-
-    .search-btn:hover {
-      background: var(--accent-blue);
-      border-color: var(--accent-blue)
-    }
-
-    .nbr-select {
-      min-width: 200px;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238a97b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center
-    }
-
-    .search-status {
-      font-size: .75rem;
-      color: var(--text-muted);
-      margin-left: 8px;
-      min-width: 80px
-    }
-
-    .autocomplete-list {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 70px;
-      background: var(--bg-card);
-      border: 1px solid rgba(255, 255, 255, .15);
-      border-radius: var(--radius-sm);
-      margin-top: 4px;
-      max-height: 220px;
-      overflow-y: auto;
-      z-index: 1000;
-      display: none;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, .5)
-    }
-
-    .autocomplete-list.visible {
-      display: block
-    }
-
-    .autocomplete-item {
-      padding: 10px 14px;
-      font-size: .82rem;
-      color: var(--text-secondary);
-      cursor: pointer;
-      border-bottom: 1px solid rgba(255, 255, 255, .05);
-      transition: background .15s, color .15s;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis
-    }
-
-    .autocomplete-item:last-child {
-      border-bottom: none
-    }
-
-    .autocomplete-item:hover {
-      background: rgba(59, 130, 246, 0.25);
-      color: #fff;
-    }
-
-    /* Search result marker pulse */
-    .search-marker-dot {
-      position: relative;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: rgba(255, 60, 90, 0.95);
-      border: 3px solid #fff;
-      box-shadow: 0 0 12px rgba(255, 60, 90, 0.8), 0 0 30px rgba(255, 60, 90, 0.4), 0 0 60px rgba(255, 60, 90, 0.2);
-      z-index: 900;
-    }
-
-    .search-marker-dot::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 50px;
-      height: 50px;
-      margin-top: -25px;
-      margin-left: -25px;
-      border-radius: 50%;
-      border: 3px solid rgba(255, 60, 90, 0.7);
-      animation: searchRing 1.8s ease-out infinite;
-    }
-
-    .search-marker-dot::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 80px;
-      height: 80px;
-      margin-top: -40px;
-      margin-left: -40px;
-      border-radius: 50%;
-      border: 2px solid rgba(255, 60, 90, 0.35);
-      animation: searchRing 1.8s ease-out 0.4s infinite;
-    }
-
-    @keyframes searchRing {
-      0% {
-        transform: scale(0.5);
-        opacity: 1;
-      }
-
-      100% {
-        transform: scale(1.5);
-        opacity: 0;
-      }
-    }
-
-    /* Map */
-    .map-container {
-      border-radius: var(--radius);
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, .08);
-      position: relative
-    }
-
-    #sf-map,
-    #tahoe-map {
-      height: 660px;
-      width: 100%;
-      background: var(--bg-card)
-    }
-
-    #tahoe-map {
-      height: 262px
-    }
-
-    .map-legend {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-      padding: 10px 16px;
-      background: var(--bg-card);
-      border-radius: var(--radius-sm);
-      border: 1px solid rgba(255, 255, 255, .06);
-      font-size: .78rem;
-      color: var(--text-secondary)
-    }
-
-    .legend-gradient {
-      height: 12px;
-      width: 200px;
-      border-radius: 6px
-    }
-
-    .sf-legend-gradient {
-      background: linear-gradient(to right, #2dd4bf, #4ade80, #facc15, #fb923c, #ef4444, #dc2626)
-    }
-
-    .tahoe-legend-gradient {
-      background: linear-gradient(to right, #a855f7, #6366f1, #22d3ee, #4ade80, #facc15, #fb923c)
-    }
-
-    /* Agent Panel */
-    .panel-section {
-      margin-bottom: 20px
-    }
-
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px
-    }
-
-    .panel-title {
-      font-size: .95rem;
-      font-weight: 600
-    }
-
-    .clear-btn {
-      padding: 4px 12px;
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, .1);
-      border-radius: 6px;
-      color: var(--text-secondary);
-      font-size: .72rem;
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      transition: all .2s
-    }
-
-    .clear-btn:hover {
-      border-color: var(--accent-warm);
-      color: var(--accent-warm)
-    }
-
-    .agent-log {
-      height: 320px;
-      overflow-y: auto;
-      background: var(--bg-card);
-      border-radius: var(--radius-sm);
-      padding: 10px;
-      border: 1px solid rgba(255, 255, 255, .06)
-    }
-
-    .log-entry {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      padding: 6px 8px;
-      border-radius: 6px;
-      font-size: .78rem;
-      line-height: 1.5;
-      animation: slideIn .3s ease;
-      transition: background .15s
-    }
-
-    .log-entry:hover {
-      background: rgba(255, 255, 255, .03)
-    }
-
-    .log-icon {
-      flex-shrink: 0;
-      width: 18px;
-      text-align: center
-    }
-
-    .log-ts {
-      color: var(--text-muted);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .7rem;
-      flex-shrink: 0
-    }
-
-    .log-msg {
-      color: var(--text-secondary)
-    }
-
-    .log-entry.init .log-msg {
-      color: var(--text-muted)
-    }
-
-    .log-entry.info .log-msg {
-      color: var(--accent-blue)
-    }
-
-    .log-entry.update .log-msg {
-      color: var(--accent-green)
-    }
-
-    .log-entry.alert .log-msg {
-      color: var(--accent-gold)
-    }
-
-    /* Differentials Card */
-    .diff-card {
-      background: var(--bg-card);
-      border-radius: var(--radius-sm);
-      padding: 14px;
-      border: 1px solid rgba(255, 255, 255, .06)
-    }
-
-    .diff-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: .82rem;
-      padding: 5px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, .04)
-    }
-
-    .diff-row:last-child {
-      border-bottom: none
-    }
-
-    .diff-label {
-      color: var(--text-secondary)
-    }
-
-    .diff-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 500
-    }
-
-    /* Doc Snapshot */
-    .doc-snapshot {
-      background: var(--bg-card);
-      border-radius: var(--radius-sm);
-      padding: 14px;
-      border: 1px solid rgba(255, 255, 255, .06);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .72rem;
-      color: var(--text-secondary);
-      white-space: pre-wrap;
-      max-height: 260px;
-      overflow-y: auto;
-      line-height: 1.7
-    }
-
-    /* Neighborhood & Resort Cards */
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-      gap: 14px;
-      padding: 20px 24px
-    }
-
-    .nb-card {
-      background: var(--bg-card);
-      border-radius: var(--radius);
-      padding: 16px;
-      border: 1px solid rgba(255, 255, 255, .06);
-      border-top: 3px solid transparent;
-      transition: transform .2s, box-shadow .2s
-    }
-
-    .nb-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, .4)
-    }
-
-    .nb-card.hottest {
-      border-top-color: var(--accent-warm)
-    }
-
-    .nb-card.coldest {
-      border-top-color: var(--accent-blue)
-    }
-
-    .nb-card.foggiest {
-      border-top-color: var(--accent-fog)
-    }
-
-    .nb-card.windiest {
-      border-top-color: var(--accent-teal)
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 10px
-    }
-
-    .card-name {
-      font-weight: 600;
-      font-size: .92rem
-    }
-
-    .card-zone {
-      font-size: .72rem;
-      color: var(--text-muted)
-    }
-
-    .card-emoji {
-      font-size: 1.6rem
-    }
-
-    .card-temp {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 2rem;
-      font-weight: 700;
-      margin: 6px 0
-    }
-
-    .card-metrics {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin: 10px 0;
-      font-size: .75rem
-    }
-
-    .card-metric {
-      display: flex;
-      justify-content: space-between;
-      color: var(--text-secondary)
-    }
-
-    .card-metric span:last-child {
-      color: var(--text-primary);
-      font-family: 'JetBrains Mono', monospace
-    }
-
-    .card-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 8px
-    }
-
-    .tag {
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: .68rem;
-      font-weight: 500
-    }
-
-    .tag-fog {
-      background: rgba(148, 163, 184, .15);
-      color: var(--accent-fog)
-    }
-
-    .tag-sunny {
-      background: rgba(250, 204, 21, .12);
-      color: #facc15
-    }
-
-    .tag-windy {
-      background: rgba(45, 212, 191, .12);
-      color: var(--accent-teal)
-    }
-
-    .tag-warm {
-      background: rgba(251, 146, 60, .12);
-      color: var(--accent-warm)
-    }
-
-    .tag-cold {
-      background: rgba(74, 158, 255, .12);
-      color: var(--accent-blue)
-    }
-
-    .tag-humid {
-      background: rgba(96, 165, 250, .12);
-      color: var(--accent-cool)
-    }
-
-    .card-updated {
-      font-size: .68rem;
-      color: var(--text-muted);
-      margin-top: 8px
-    }
-
-    /* Tahoe-specific */
-    .tag-powder {
-      background: rgba(168, 85, 247, .18);
-      color: #a855f7
-    }
-
-    .tag-snowing {
-      background: rgba(74, 222, 128, .15);
-      color: var(--accent-green)
-    }
-
-    .tag-epic {
-      background: rgba(168, 85, 247, .18);
-      color: #a855f7
-    }
-
-    .tag-good {
-      background: rgba(74, 222, 128, .15);
-      color: var(--accent-green)
-    }
-
-    .tag-fair {
-      background: rgba(148, 163, 184, .12);
-      color: var(--accent-fog)
-    }
-
-    .tag-windhold {
-      background: rgba(250, 204, 21, .15);
-      color: #facc15
-    }
-
-    .tag-rainonsnow {
-      background: rgba(239, 68, 68, .15);
-      color: #ef4444
-    }
-
-    .tag-slushrisk {
-      background: rgba(250, 204, 21, .15);
-      color: #facc15
-    }
-
-    .tag-nosnow {
-      background: rgba(239, 68, 68, .12);
-      color: #ef4444
-    }
-
-    .freeze-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: .68rem;
-      font-weight: 600;
-      margin-top: 4px
-    }
-
-    .freeze-badge.freezing {
-      background: rgba(74, 158, 255, .15);
-      color: var(--accent-blue)
-    }
-
-    .freeze-badge.above {
-      background: rgba(250, 204, 21, .12);
-      color: #facc15
-    }
-
-    .snow-chart {
-      margin-top: 12px;
-      background: var(--bg-card);
-      border-radius: var(--radius-sm);
-      padding: 14px;
-      border: 1px solid rgba(255, 255, 255, .06)
-    }
-
-    .snow-chart-title {
-      font-size: .8rem;
-      font-weight: 600;
-      margin-bottom: 10px
-    }
-
-    .snow-bars {
-      display: flex;
-      align-items: flex-end;
-      gap: 6px;
-      height: 120px
-    }
-
-    .snow-bar-wrap {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px
-    }
-
-    .snow-bar {
-      width: 100%;
-      border-radius: 4px 4px 0 0;
-      min-height: 2px;
-      transition: height .4s ease
-    }
-
-    .snow-bar-label {
-      font-size: .6rem;
-      color: var(--text-muted);
-      font-family: 'JetBrains Mono', monospace
-    }
-
-    .snow-bar-day {
-      font-size: .62rem;
-      color: var(--text-secondary)
-    }
-
-    .snow-total {
-      text-align: center;
-      margin-top: 8px;
-      font-size: .78rem;
-      color: var(--text-secondary)
-    }
-
-    .snow-total span {
-      color: var(--text-primary);
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600
-    }
-
-    /* Footer */
-    .footer {
-      padding: 16px 24px;
-      text-align: center;
-      font-size: .75rem;
-      color: var(--text-muted);
-      border-top: 1px solid rgba(255, 255, 255, .06);
-      background: var(--bg-secondary)
-    }
-
-    /* Responsive */
-    @media(max-width:1100px) {
-      .main-layout {
-        grid-template-columns: 1fr
-      }
-
-      .agent-col {
-        border-left: none;
-        border-top: 1px solid rgba(255, 255, 255, .06)
-      }
-
-      .stats-bar {
-        grid-template-columns: repeat(3, 1fr)
-      }
-    }
-
-    @media(max-width:640px) {
-      .stats-bar {
-        grid-template-columns: repeat(2, 1fr)
-      }
-
-      .header {
-        flex-direction: column;
-        gap: 10px;
-        align-items: flex-start
-      }
-
-      .cards-grid {
-        grid-template-columns: 1fr
-      }
-    }
-
-    /* Leaflet overrides */
-    .leaflet-popup-content-wrapper {
-      background: var(--bg-card) !important;
-      color: var(--text-primary) !important;
-      border-radius: var(--radius-sm) !important;
-      border: 1px solid rgba(255, 255, 255, .1) !important;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, .5) !important
-    }
-
-    .leaflet-popup-tip {
-      background: var(--bg-card) !important
-    }
-
-    .leaflet-popup-content {
-      font-family: 'Inter', sans-serif !important;
-      font-size: .82rem !important;
-      line-height: 1.6 !important
-    }
-
-    .leaflet-control-zoom a {
-      background: var(--bg-card) !important;
-      color: var(--text-primary) !important;
-      border-color: rgba(255, 255, 255, .1) !important
-    }
-
-    .leaflet-control-attribution {
-      background: rgba(10, 13, 20, .8) !important;
-      color: var(--text-muted) !important;
-      font-size: .65rem !important
-    }
-
-    .leaflet-control-attribution a {
-      color: var(--accent-blue) !important
-    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg-primary:#0a0d14;--bg-secondary:#111520;--bg-card:#161b28;--text-primary:#e8edf5;--text-secondary:#8a97b8;--text-muted:#4a5570;--accent-gold:#f5a623;--accent-blue:#4a9eff;--accent-teal:#2dd4bf;--accent-fog:#94a3b8;--accent-warm:#fb923c;--accent-cool:#60a5fa;--accent-green:#4ade80;--radius:14px;--radius-sm:10px}
+    html{font-size:14px}
+    body{font-family:'Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+    code,.mono{font-family:'JetBrains Mono',monospace}
+    a{color:var(--accent-blue);text-decoration:none}a:hover{text-decoration:underline}
+
+    @keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.7)}70%{box-shadow:0 0 0 8px rgba(74,222,128,0)}}
+    @keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+    .tab-bar{display:flex;gap:4px;padding:8px 24px;background:var(--bg-secondary);border-bottom:1px solid rgba(255,255,255,.06)}
+    .tab-btn{padding:10px 24px;border:none;background:transparent;color:var(--text-secondary);font-family:'Inter',sans-serif;font-size:.95rem;font-weight:500;cursor:pointer;border-radius:8px 8px 0 0;transition:all .25s}
+    .tab-btn:hover{color:var(--text-primary);background:rgba(255,255,255,.04)}
+    .tab-btn.active{color:var(--text-primary);background:var(--bg-card);border-bottom:2px solid var(--accent-blue)}
+    .tab-content{display:none;animation:fadeIn .3s ease}.tab-content.active{display:block}
+
+    .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:var(--bg-secondary);border-bottom:1px solid rgba(255,255,255,.06)}
+    .header-left{display:flex;align-items:center;gap:14px}
+    .logo-badge{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-teal));display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+    .header-title{font-size:1.25rem;font-weight:700}
+    .header-sub{font-size:.8rem;color:var(--text-secondary)}.header-sub a{color:var(--accent-blue)}
+    .header-right{display:flex;align-items:center;gap:18px;font-size:.85rem}
+    .agent-badge{display:flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:20px;color:var(--accent-green);font-weight:600;font-size:.8rem}
+    .pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-green);animation:pulse-green 2s infinite}
+    .header-ts{color:var(--text-secondary);text-align:right;line-height:1.6}.header-ts .mono{color:var(--text-primary);font-size:.82rem}
+
+    .stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:16px 24px;background:var(--bg-secondary);border-bottom:1px solid rgba(255,255,255,.06)}
+    .stat-card{background:var(--bg-card);border-radius:var(--radius-sm);padding:14px 16px;border:1px solid rgba(255,255,255,.06);transition:transform .2s,box-shadow .2s}
+    .stat-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+    .stat-label{font-size:.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+    .stat-value{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:600}
+
+    .main-layout{display:grid;grid-template-columns:1fr 370px;gap:0;min-height:calc(100vh - 260px)}
+    .map-col{padding:20px 24px;background:var(--bg-primary)}
+    .agent-col{padding:20px;background:var(--bg-secondary);border-left:1px solid rgba(255,255,255,.06);overflow-y:auto}
+
+    .map-controls{display:flex;gap:10px;margin-bottom:12px;align-items:center}
+    .search-wrap{flex:1;display:flex;gap:6px}
+    .search-input{flex:1;padding:10px 14px;background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius-sm);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:.85rem;outline:none;transition:border-color .2s}
+    .search-input:focus{border-color:var(--accent-blue)}
+    .search-btn,.nbr-select{padding:10px 16px;background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius-sm);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:.85rem;cursor:pointer;transition:all .2s}
+    .search-btn:hover{background:var(--accent-blue);border-color:var(--accent-blue)}
+    .nbr-select{min-width:200px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238a97b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+    .search-status{font-size:.75rem;color:var(--text-muted);margin-left:8px;min-width:80px}
+
+    .map-container{border-radius:var(--radius);overflow:hidden;border:1px solid rgba(255,255,255,.08);position:relative}
+    #sf-map{height:450px;width:100%;background:var(--bg-card)}
+    #tahoe-map{height:262px;width:100%;background:var(--bg-card)}
+
+    .map-legend{display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 16px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid rgba(255,255,255,.06);font-size:.78rem;color:var(--text-secondary)}
+    .legend-gradient{height:12px;width:200px;border-radius:6px}
+    .sf-legend-gradient{background:linear-gradient(to right,#2dd4bf,#4ade80,#facc15,#fb923c,#ef4444,#dc2626)}
+    .tahoe-legend-gradient{background:linear-gradient(to right,#a855f7,#6366f1,#22d3ee,#4ade80,#facc15,#fb923c)}
+
+    .panel-section{margin-bottom:20px}
+    .panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .panel-title{font-size:.95rem;font-weight:600}
+    .log-controls{display:flex;gap:6px;align-items:center}
+    .filter-toggle{padding:4px 10px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text-secondary);font-size:.72rem;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+    .filter-toggle:hover{border-color:var(--accent-blue);color:var(--accent-blue)}
+    .filter-toggle.active{background:rgba(74,158,255,.12);border-color:var(--accent-blue);color:var(--accent-blue)}
+    .clear-btn{padding:4px 12px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text-secondary);font-size:.72rem;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+    .clear-btn:hover{border-color:var(--accent-warm);color:var(--accent-warm)}
+    .agent-log{height:320px;overflow-y:auto;background:var(--bg-card);border-radius:var(--radius-sm);padding:10px;border:1px solid rgba(255,255,255,.06)}
+    .agent-log.changes-only .log-entry.init,.agent-log.changes-only .log-entry.info{display:none}
+
+    .log-entry{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:6px;font-size:.78rem;line-height:1.5;animation:slideIn .3s ease;transition:background .15s}
+    .log-entry:hover{background:rgba(255,255,255,.03)}
+    .log-icon{flex-shrink:0;width:18px;text-align:center}
+    .log-ts{color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.7rem;flex-shrink:0}
+    .log-msg{color:var(--text-secondary)}
+    .log-entry.init .log-msg{color:var(--text-muted)}
+    .log-entry.info .log-msg{color:var(--accent-blue)}
+    .log-entry.update .log-msg{color:var(--accent-green)}
+    .log-entry.alert .log-msg{color:var(--accent-gold)}
+
+    .diff-card{background:var(--bg-card);border-radius:var(--radius-sm);padding:14px;border:1px solid rgba(255,255,255,.06)}
+    .diff-row{display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+    .diff-row:last-child{border-bottom:none}
+    .diff-label{color:var(--text-secondary)}.diff-value{font-family:'JetBrains Mono',monospace;font-weight:500}
+
+    .doc-snapshot{background:var(--bg-card);border-radius:var(--radius-sm);padding:14px;border:1px solid rgba(255,255,255,.06);font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-secondary);white-space:pre-wrap;max-height:260px;overflow-y:auto;line-height:1.7}
+
+    .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;padding:20px 24px}
+    .nb-card{background:var(--bg-card);border-radius:var(--radius);padding:16px;border:1px solid rgba(255,255,255,.06);border-top:3px solid transparent;transition:transform .2s,box-shadow .2s}
+    .nb-card:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+    .nb-card.hottest{border-top-color:var(--accent-warm)}.nb-card.coldest{border-top-color:var(--accent-blue)}.nb-card.foggiest{border-top-color:var(--accent-fog)}.nb-card.windiest{border-top-color:var(--accent-teal)}
+
+    .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+    .card-name{font-weight:600;font-size:.92rem}.card-zone{font-size:.72rem;color:var(--text-muted)}.card-emoji{font-size:1.6rem}
+    .card-temp{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:700;margin:6px 0}
+    .card-metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0;font-size:.75rem}
+    .card-metric{display:flex;justify-content:space-between;color:var(--text-secondary)}
+    .card-metric span:last-child{color:var(--text-primary);font-family:'JetBrains Mono',monospace}
+    .card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+    .tag{padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:500}
+    .tag-alert{padding:3px 10px;font-size:.72rem;font-weight:700;letter-spacing:.3px;border-width:1px;border-style:solid}
+    .tag-fog{background:rgba(148,163,184,.15);color:var(--accent-fog)}
+    .tag-sunny{background:rgba(250,204,21,.12);color:#facc15}
+    .tag-windy{background:rgba(45,212,191,.12);color:var(--accent-teal)}
+    .tag-warm{background:rgba(251,146,60,.12);color:var(--accent-warm)}
+    .tag-cold{background:rgba(74,158,255,.12);color:var(--accent-blue)}
+    .tag-humid{background:rgba(96,165,250,.12);color:var(--accent-cool)}
+    .card-updated{font-size:.68rem;color:var(--text-muted);margin-top:8px}
+    .tag-snowing{background:rgba(74,222,128,.15);color:var(--accent-green)}
+    .tag-good{background:rgba(74,222,128,.15);color:var(--accent-green)}
+    .tag-fair{background:rgba(148,163,184,.12);color:var(--accent-fog)}
+    .tag-nosnow{background:rgba(239,68,68,.12);color:#ef4444}
+    .tag-powder{background:rgba(168,85,247,.18);color:#a855f7;border-color:rgba(168,85,247,.5)}
+    .tag-epic{background:rgba(168,85,247,.18);color:#a855f7;border-color:rgba(168,85,247,.5)}
+    .tag-windhold{background:rgba(250,204,21,.15);color:#facc15;border-color:rgba(250,204,21,.45)}
+    .tag-rainonsnow{background:rgba(239,68,68,.15);color:#ef4444;border-color:rgba(239,68,68,.45)}
+    .tag-slushrisk{background:rgba(250,204,21,.15);color:#facc15}
+    .freeze-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:600;margin-top:4px}
+    .freeze-badge.freezing{background:rgba(74,158,255,.15);color:var(--accent-blue)}
+    .freeze-badge.above{background:rgba(250,204,21,.12);color:#facc15}
+    .snow-chart{margin-top:12px;background:var(--bg-card);border-radius:var(--radius-sm);padding:14px;border:1px solid rgba(255,255,255,.06)}
+    .snow-chart-title{font-size:.8rem;font-weight:600;margin-bottom:10px}
+    .snow-chart-hint{margin-top:12px;padding:14px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px dashed rgba(255,255,255,.1);font-size:.78rem;color:var(--text-muted);text-align:center}
+    .snow-bars{display:flex;align-items:flex-end;gap:6px;height:140px}
+    .snow-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+    .snow-bar-area{width:100%;height:100px;display:flex;align-items:flex-end}
+    .snow-bar{width:100%;border-radius:4px 4px 0 0;min-height:2px;transition:height .4s ease}
+    .snow-bar-label{font-size:.6rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+    .snow-bar-day{font-size:.62rem;color:var(--text-secondary)}
+    .snow-total{text-align:center;margin-top:8px;font-size:.78rem;color:var(--text-secondary)}
+    .snow-total span{color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-weight:600}
+    .footer{padding:16px 24px;text-align:center;font-size:.75rem;color:var(--text-muted);border-top:1px solid rgba(255,255,255,.06);background:var(--bg-secondary)}
+
+    @media(max-width:1100px){.main-layout{grid-template-columns:1fr}.agent-col{border-left:none;border-top:1px solid rgba(255,255,255,.06)}.stats-bar{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:640px){.stats-bar{grid-template-columns:repeat(2,1fr)}.header{flex-direction:column;gap:10px;align-items:flex-start}.cards-grid{grid-template-columns:1fr}}
+
+    .leaflet-popup-content-wrapper{background:var(--bg-card)!important;color:var(--text-primary)!important;border-radius:var(--radius-sm)!important;border:1px solid rgba(255,255,255,.1)!important;box-shadow:0 8px 30px rgba(0,0,0,.5)!important}
+    .leaflet-popup-tip{background:var(--bg-card)!important}
+    .leaflet-popup-content{font-family:'Inter',sans-serif!important;font-size:.82rem!important;line-height:1.6!important}
+    .leaflet-control-zoom a{background:var(--bg-card)!important;color:var(--text-primary)!important;border-color:rgba(255,255,255,.1)!important}
+    .leaflet-control-attribution{background:rgba(10,13,20,.8)!important;color:var(--text-muted)!important;font-size:.65rem!important}
+    .leaflet-control-attribution a{color:var(--accent-blue)!important}
   </style>
 </head>
-
 <body>
-  <!-- Tab Bar -->
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="sf" id="tab-sf">🌁 San Francisco</button>
     <button class="tab-btn" data-tab="tahoe" id="tab-tahoe">⛷ Lake Tahoe Ski Resorts</button>
   </div>
 
-  <!-- ===== SF TAB ===== -->
+  <!-- SF TAB -->
   <div class="tab-content active" id="content-sf">
-    <div class="header" id="sf-header">
+    <div class="header">
       <div class="header-left">
         <div class="logo-badge">🌁</div>
-        <div>
-          <div class="header-title">San Francisco Live Microclimate Monitor</div>
-          <div class="header-sub">Powered by <a href="https://open-meteo.com" target="_blank"
-              rel="noopener noreferrer">Open-Meteo</a></div>
-        </div>
+        <div><div class="header-title">San Francisco Live Microclimate Monitor</div><div class="header-sub">Powered by <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo</a></div></div>
       </div>
       <div class="header-right">
         <div class="agent-badge"><span class="pulse-dot"></span> AGENT ACTIVE</div>
-        <div class="header-ts">Last updated: <span class="mono" id="sf-last-updated">—</span><br>Next poll in <span
-            class="mono" id="sf-countdown">60:00</span></div>
+        <div class="header-ts">Last updated: <span class="mono" id="sf-last-updated">—</span><br>Next poll in <span class="mono" id="sf-countdown">60</span>s</div>
       </div>
     </div>
-    <div class="stats-bar" id="sf-stats">
-      <div class="stat-card">
-        <div class="stat-label">🔥 Warmest Right Now</div>
-        <div class="stat-value" id="sf-warmest">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">🧊 Coldest Right Now</div>
-        <div class="stat-value" id="sf-coldest">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">🌡 Max Temp Spread</div>
-        <div class="stat-value" id="sf-spread">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">💨 Windiest Spot</div>
-        <div class="stat-value" id="sf-windiest">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">🌫 Foggiest Zone</div>
-        <div class="stat-value" id="sf-foggiest">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">📄 Docs Generated</div>
-        <div class="stat-value" id="sf-docs-count">0</div>
-      </div>
+    <div class="stats-bar">
+      <div class="stat-card"><div class="stat-label">🔥 Warmest Right Now</div><div class="stat-value" id="sf-warmest">—</div></div>
+      <div class="stat-card"><div class="stat-label">🧊 Coldest Right Now</div><div class="stat-value" id="sf-coldest">—</div></div>
+      <div class="stat-card"><div class="stat-label">🌡 Max Temp Spread</div><div class="stat-value" id="sf-spread">—</div></div>
+      <div class="stat-card"><div class="stat-label">💨 Windiest Spot</div><div class="stat-value" id="sf-windiest">—</div></div>
+      <div class="stat-card"><div class="stat-label">🌧 Active Precipitation</div><div class="stat-value" id="sf-precip-count">0 zones</div></div>
     </div>
     <div class="main-layout">
       <div class="map-col">
         <div class="map-controls">
-          <div class="search-wrap">
-            <input type="text" class="search-input" id="sf-search-input" placeholder="Search address..." maxlength="120"
-              aria-label="Search SF address">
-            <button class="search-btn" id="sf-search-btn">🔍 Search</button>
-            <div class="autocomplete-list" id="sf-autocomplete"></div>
-          </div>
-          <select class="nbr-select" id="sf-nbr-select">
-            <option value="">— Jump to neighborhood —</option>
-          </select>
+          <div class="search-wrap"><input type="text" class="search-input" id="sf-search-input" placeholder="Search address..." maxlength="120"><button class="search-btn" id="sf-search-btn">🔍 Search</button></div>
+          <select class="nbr-select" id="sf-nbr-select"><option value="">— Jump to neighborhood —</option></select>
           <span class="search-status" id="sf-search-status"></span>
         </div>
-        <div class="map-container">
-          <div id="sf-map"></div>
-        </div>
-        <div class="map-legend"><span>&lt;55°F</span>
-          <div class="legend-gradient sf-legend-gradient"></div><span>&gt;75°F</span>
-        </div>
+        <div class="map-container"><div id="sf-map"></div></div>
+        <div class="map-legend"><span>&lt;55°F</span><div class="legend-gradient sf-legend-gradient"></div><span>&gt;75°F</span></div>
       </div>
       <div class="agent-col">
         <div class="panel-section">
-          <div class="panel-header"><span class="panel-title">Agent Activity Log</span><button class="clear-btn"
-              id="sf-log-clear">Clear</button></div>
+          <div class="panel-header"><span class="panel-title">Agent Activity Log</span>
+            <div class="log-controls"><button class="filter-toggle" id="sf-log-filter">Changes Only</button><button class="clear-btn" id="sf-log-clear">Clear</button></div>
+          </div>
           <div class="agent-log" id="sf-agent-log"></div>
         </div>
         <div class="panel-section">
           <div class="panel-header"><span class="panel-title">Microclimate Differentials</span></div>
-          <div class="diff-card" id="sf-diff-card">
-            <div class="diff-row"><span class="diff-label">Warmest</span><span class="diff-value"
-                id="sf-diff-warmest">—</span></div>
-            <div class="diff-row"><span class="diff-label">Coldest</span><span class="diff-value"
-                id="sf-diff-coldest">—</span></div>
-            <div class="diff-row"><span class="diff-label">Temp Delta</span><span class="diff-value"
-                id="sf-diff-delta">—</span></div>
-            <div class="diff-row"><span class="diff-label">Windiest</span><span class="diff-value"
-                id="sf-diff-windiest">—</span></div>
-            <div class="diff-row"><span class="diff-label">Foggiest</span><span class="diff-value"
-                id="sf-diff-foggiest">—</span></div>
-            <div class="diff-row"><span class="diff-label">Most Humid</span><span class="diff-value"
-                id="sf-diff-humid">—</span></div>
+          <div class="diff-card">
+            <div class="diff-row"><span class="diff-label">Warmest</span><span class="diff-value" id="sf-diff-warmest">—</span></div>
+            <div class="diff-row"><span class="diff-label">Coldest</span><span class="diff-value" id="sf-diff-coldest">—</span></div>
+            <div class="diff-row"><span class="diff-label">Temp Delta</span><span class="diff-value" id="sf-diff-delta">—</span></div>
+            <div class="diff-row"><span class="diff-label">Windiest</span><span class="diff-value" id="sf-diff-windiest">—</span></div>
+            <div class="diff-row"><span class="diff-label">Foggiest</span><span class="diff-value" id="sf-diff-foggiest">—</span></div>
+            <div class="diff-row"><span class="diff-label">Most Humid</span><span class="diff-value" id="sf-diff-humid">—</span></div>
           </div>
         </div>
         <div class="panel-section">
@@ -1069,97 +217,56 @@
     <div class="cards-grid" id="sf-cards-grid"></div>
   </div>
 
-  <!-- ===== TAHOE TAB ===== -->
+  <!-- TAHOE TAB -->
   <div class="tab-content" id="content-tahoe">
-    <div class="header" id="tahoe-header">
+    <div class="header">
       <div class="header-left">
         <div class="logo-badge">⛷</div>
-        <div>
-          <div class="header-title">Lake Tahoe Ski Resort Monitor</div>
-          <div class="header-sub">Powered by <a href="https://open-meteo.com" target="_blank"
-              rel="noopener noreferrer">Open-Meteo</a></div>
-        </div>
+        <div><div class="header-title">Lake Tahoe Ski Resort Monitor</div><div class="header-sub">Powered by <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo</a></div></div>
       </div>
       <div class="header-right">
         <div class="agent-badge"><span class="pulse-dot"></span> AGENT ACTIVE</div>
-        <div class="header-ts">Last updated: <span class="mono" id="tahoe-last-updated">—</span><br>Next poll in <span
-            class="mono" id="tahoe-countdown">60:00</span></div>
+        <div class="header-ts">Last updated: <span class="mono" id="tahoe-last-updated">—</span><br>Next poll in <span class="mono" id="tahoe-countdown">60</span>s</div>
       </div>
     </div>
-    <div class="stats-bar" id="tahoe-stats">
-      <div class="stat-card">
-        <div class="stat-label">❄️ Best Snowfall</div>
-        <div class="stat-value" id="tahoe-best-snow">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">📏 Deepest Base</div>
-        <div class="stat-value" id="tahoe-deepest">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">🧊 Coldest Resort</div>
-        <div class="stat-value" id="tahoe-coldest">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">🔥 Warmest Resort</div>
-        <div class="stat-value" id="tahoe-warmest">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">💨 Windiest Resort</div>
-        <div class="stat-value" id="tahoe-windiest">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">⭐ Best Conditions</div>
-        <div class="stat-value" id="tahoe-best-cond">—</div>
-      </div>
+    <div class="stats-bar">
+      <div class="stat-card"><div class="stat-label">❄️ Best Snowfall</div><div class="stat-value" id="tahoe-best-snow">—</div></div>
+      <div class="stat-card"><div class="stat-label">📏 Deepest Base</div><div class="stat-value" id="tahoe-deepest">—</div></div>
+      <div class="stat-card"><div class="stat-label">🧊 Coldest Resort</div><div class="stat-value" id="tahoe-coldest">—</div></div>
+      <div class="stat-card"><div class="stat-label">💨 Windiest Resort</div><div class="stat-value" id="tahoe-windiest">—</div></div>
+      <div class="stat-card"><div class="stat-label">⭐ Best Conditions</div><div class="stat-value" id="tahoe-best-cond">—</div></div>
     </div>
     <div class="main-layout">
       <div class="map-col">
         <div class="map-controls">
-          <div class="search-wrap">
-            <input type="text" class="search-input" id="tahoe-search-input" placeholder="Search address..."
-              maxlength="120" aria-label="Search Tahoe address">
-            <button class="search-btn" id="tahoe-search-btn">🔍 Search</button>
-            <div class="autocomplete-list" id="tahoe-autocomplete"></div>
-          </div>
-          <select class="nbr-select" id="tahoe-resort-select">
-            <option value="">— Jump to resort —</option>
-          </select>
+          <div class="search-wrap"><input type="text" class="search-input" id="tahoe-search-input" placeholder="Search address..." maxlength="120"><button class="search-btn" id="tahoe-search-btn">🔍 Search</button></div>
+          <select class="nbr-select" id="tahoe-resort-select"><option value="">— Jump to resort —</option></select>
           <span class="search-status" id="tahoe-search-status"></span>
         </div>
-        <div class="map-container">
-          <div id="tahoe-map"></div>
-        </div>
-        <div class="map-legend"><span>Powder</span>
-          <div class="legend-gradient tahoe-legend-gradient"></div><span>Slush Risk</span>
-        </div>
-        <div class="snow-chart" id="tahoe-snow-chart">
-          <div class="snow-chart-title">7-Day Snowfall History</div>
-          <div style="text-align:center;color:var(--text-muted);font-size:.78rem;padding:18px 0" id="tahoe-snow-hint">⛷
-            Select a resort above to view snowfall history</div>
-          <div class="snow-bars" id="tahoe-snow-bars" style="display:none"></div>
-          <div class="snow-total" id="tahoe-snow-total-wrap" style="display:none">7-Day Total: <span
-              id="tahoe-snow-total">—</span></div>
+        <div class="map-container"><div id="tahoe-map"></div></div>
+        <div class="map-legend"><span>Powder</span><div class="legend-gradient tahoe-legend-gradient"></div><span>Slush Risk</span></div>
+        <div class="snow-chart-hint" id="tahoe-snow-hint">Select a resort above for 7-day snowfall history — or it will auto-load for the best conditions resort</div>
+        <div class="snow-chart" id="tahoe-snow-chart" style="display:none">
+          <div class="snow-chart-title">7-Day Snowfall History — <span id="tahoe-snow-resort-name"></span></div>
+          <div class="snow-bars" id="tahoe-snow-bars"></div>
+          <div class="snow-total">7-Day Total: <span id="tahoe-snow-total">—</span></div>
         </div>
       </div>
       <div class="agent-col">
         <div class="panel-section">
-          <div class="panel-header"><span class="panel-title">Snow Agent Log</span><button class="clear-btn"
-              id="tahoe-log-clear">Clear</button></div>
+          <div class="panel-header"><span class="panel-title">Snow Agent Log</span>
+            <div class="log-controls"><button class="filter-toggle" id="tahoe-log-filter">Changes Only</button><button class="clear-btn" id="tahoe-log-clear">Clear</button></div>
+          </div>
           <div class="agent-log" id="tahoe-agent-log"></div>
         </div>
         <div class="panel-section">
           <div class="panel-header"><span class="panel-title">Resort Differentials</span></div>
-          <div class="diff-card" id="tahoe-diff-card">
-            <div class="diff-row"><span class="diff-label">Best Snowfall</span><span class="diff-value"
-                id="tahoe-diff-snow">—</span></div>
-            <div class="diff-row"><span class="diff-label">Deepest Base</span><span class="diff-value"
-                id="tahoe-diff-base">—</span></div>
-            <div class="diff-row"><span class="diff-label">Coldest</span><span class="diff-value"
-                id="tahoe-diff-coldest">—</span></div>
-            <div class="diff-row"><span class="diff-label">Warmest</span><span class="diff-value"
-                id="tahoe-diff-warmest">—</span></div>
-            <div class="diff-row"><span class="diff-label">Windiest</span><span class="diff-value"
-                id="tahoe-diff-windiest">—</span></div>
+          <div class="diff-card">
+            <div class="diff-row"><span class="diff-label">Best Snowfall</span><span class="diff-value" id="tahoe-diff-snow">—</span></div>
+            <div class="diff-row"><span class="diff-label">Deepest Base</span><span class="diff-value" id="tahoe-diff-base">—</span></div>
+            <div class="diff-row"><span class="diff-label">Coldest</span><span class="diff-value" id="tahoe-diff-coldest">—</span></div>
+            <div class="diff-row"><span class="diff-label">Warmest</span><span class="diff-value" id="tahoe-diff-warmest">—</span></div>
+            <div class="diff-row"><span class="diff-label">Windiest</span><span class="diff-value" id="tahoe-diff-windiest">—</span></div>
           </div>
         </div>
         <div class="panel-section">
@@ -1171,1080 +278,775 @@
     <div class="cards-grid" id="tahoe-cards-grid"></div>
   </div>
 
-  <!-- Footer -->
-  <div class="footer">"Weather data: Open-Meteo — free, no API key, updated hourly | Map: Leaflet + CARTO tiles | All
-    data processed locally | Last update: <span id="footer-time">—</span>"</div>
+  <div class="footer">Weather data: Open-Meteo | Map: Leaflet + CARTO tiles | All data processed locally | Last update: <span id="footer-time">—</span></div>
 
   <script src="vendor/leaflet.js"></script>
   <script>
-    (function () {
-      "use strict";
+(function () {
+  "use strict";
 
-      /* ============ DATA ============ */
-      const SF_NEIGHBORHOODS = [
-        { id: "outer-sunset", name: "Outer Sunset", zone: "Fog Belt West", lat: 37.7516, lon: -122.5076, emoji: "🌊🌬️" },
-        { id: "inner-sunset", name: "Inner Sunset", zone: "Fog Belt", lat: 37.7625, lon: -122.4694, emoji: "🌫" },
-        { id: "outer-richmond", name: "Outer Richmond", zone: "Fog Belt North", lat: 37.7785, lon: -122.5065, emoji: "🍜" },
-        { id: "inner-richmond", name: "Inner Richmond", zone: "Transitional", lat: 37.7804, lon: -122.4645, emoji: "🌤" },
-        { id: "mission", name: "The Mission", zone: "Warm Pocket", lat: 37.7599, lon: -122.4148, emoji: "🌟" },
-        { id: "castro", name: "Castro", zone: "Warm Pocket", lat: 37.7610, lon: -122.4350, emoji: "🌈" },
-        { id: "noe-valley", name: "Noe Valley", zone: "Warm Pocket", lat: 37.7479, lon: -122.4317, emoji: "☕🌿" },
-        { id: "soma", name: "SoMa", zone: "Downtown Core", lat: 37.7785, lon: -122.4006, emoji: "🎧🍸" },
-        { id: "marina", name: "Marina", zone: "Bayside", lat: 37.8030, lon: -122.4360, emoji: "⛵" },
-        { id: "north-beach", name: "North Beach", zone: "Downtown North", lat: 37.8067, lon: -122.4102, emoji: "🏖" },
-        { id: "embarcadero", name: "Embarcadero", zone: "Waterfront", lat: 37.7955, lon: -122.3937, emoji: "🚋" },
-        { id: "twin-peaks", name: "Twin Peaks", zone: "Elevated / Windy", lat: 37.7534, lon: -122.4477, emoji: "⛰️" },
-        { id: "haight", name: "Haight-Ashbury", zone: "Central", lat: 37.7697, lon: -122.4481, emoji: "☮" },
-        { id: "glen-park", name: "Glen Park", zone: "Bowl / Sheltered", lat: 37.7334, lon: -122.4330, emoji: "🌿" },
-        { id: "potrero-hill", name: "Potrero Hill", zone: "Sunny Pocket", lat: 37.7600, lon: -122.3990, emoji: "🌞" }
-      ];
+  /* ============ DATA ============ */
+  const SF_NEIGHBORHOODS = [
+    { id: "outer-sunset", name: "Outer Sunset", zone: "Fog Belt West", lat: 37.7516, lon: -122.5076, emoji: "🌫" },
+    { id: "inner-sunset", name: "Inner Sunset", zone: "Fog Belt", lat: 37.7625, lon: -122.4694, emoji: "🌫" },
+    { id: "outer-richmond", name: "Outer Richmond", zone: "Fog Belt North", lat: 37.7785, lon: -122.5065, emoji: "🌫" },
+    { id: "inner-richmond", name: "Inner Richmond", zone: "Transitional", lat: 37.7804, lon: -122.4645, emoji: "🌤" },
+    { id: "mission", name: "The Mission", zone: "Warm Pocket", lat: 37.7599, lon: -122.4148, emoji: "🌟" },
+    { id: "castro", name: "Castro", zone: "Warm Pocket", lat: 37.761, lon: -122.435, emoji: "🌟" },
+    { id: "noe-valley", name: "Noe Valley", zone: "Warm Pocket", lat: 37.7479, lon: -122.4317, emoji: "🌟" },
+    { id: "soma", name: "SoMa", zone: "Downtown Core", lat: 37.7785, lon: -122.4006, emoji: "🏙" },
+    { id: "marina", name: "Marina", zone: "Bayside", lat: 37.803, lon: -122.436, emoji: "⛵" },
+    { id: "north-beach", name: "North Beach", zone: "Downtown North", lat: 37.8067, lon: -122.4102, emoji: "🏖" },
+    { id: "embarcadero", name: "Embarcadero", zone: "Waterfront", lat: 37.7955, lon: -122.3937, emoji: "🌊" },
+    { id: "twin-peaks", name: "Twin Peaks", zone: "Elevated / Windy", lat: 37.7534, lon: -122.4477, emoji: "🌬" },
+    { id: "haight", name: "Haight-Ashbury", zone: "Central", lat: 37.7697, lon: -122.4481, emoji: "☮" },
+    { id: "glen-park", name: "Glen Park", zone: "Bowl / Sheltered", lat: 37.7334, lon: -122.433, emoji: "🌿" },
+    { id: "potrero-hill", name: "Potrero Hill", zone: "Sunny Pocket", lat: 37.76, lon: -122.399, emoji: "🌞" }
+  ];
 
-      const TAHOE_RESORTS = [
-        { id: "palisades", name: "Palisades Tahoe", area: "North Shore", lat: 39.1969, lon: -120.2351, elev: 8200 },
-        { id: "alpine-meadows", name: "Alpine Meadows", area: "North Shore", lat: 39.1668, lon: -120.2348, elev: 7000 },
-        { id: "northstar", name: "Northstar", area: "North Shore", lat: 39.2746, lon: -120.1208, elev: 6330 },
-        { id: "heavenly", name: "Heavenly", area: "South Shore", lat: 38.9353, lon: -119.9400, elev: 6540 },
-        { id: "kirkwood", name: "Kirkwood", area: "South Shore", lat: 38.6855, lon: -120.0651, elev: 7800 },
-        { id: "sierra-at-tahoe", name: "Sierra-at-Tahoe", area: "South Shore", lat: 38.7926, lon: -120.0805, elev: 6640 },
-        { id: "sugar-bowl", name: "Sugar Bowl", area: "Donner Summit", lat: 39.2982, lon: -120.3618, elev: 6883 },
-        { id: "boreal", name: "Boreal", area: "Donner Summit", lat: 39.3428, lon: -120.3478, elev: 7200 },
-        { id: "mt-rose", name: "Mt. Rose", area: "East Shore NV", lat: 39.3147, lon: -119.8922, elev: 8260 },
-        { id: "diamond-peak", name: "Diamond Peak", area: "East Shore NV", lat: 39.2558, lon: -119.9387, elev: 6700 }
-      ];
+  const TAHOE_RESORTS = [
+    { id: "palisades", name: "Palisades Tahoe", area: "North Shore", lat: 39.1969, lon: -120.2351, elev: 8200 },
+    { id: "alpine-meadows", name: "Alpine Meadows", area: "North Shore", lat: 39.1668, lon: -120.2348, elev: 7000 },
+    { id: "northstar", name: "Northstar", area: "North Shore", lat: 39.2746, lon: -120.1208, elev: 6330 },
+    { id: "heavenly", name: "Heavenly", area: "South Shore", lat: 38.9353, lon: -119.94, elev: 6540 },
+    { id: "kirkwood", name: "Kirkwood", area: "South Shore", lat: 38.6855, lon: -120.0651, elev: 7800 },
+    { id: "sierra-at-tahoe", name: "Sierra-at-Tahoe", area: "South Shore", lat: 38.7926, lon: -120.0805, elev: 6640 },
+    { id: "sugar-bowl", name: "Sugar Bowl", area: "Donner Summit", lat: 39.2982, lon: -120.3618, elev: 6883 },
+    { id: "boreal", name: "Boreal", area: "Donner Summit", lat: 39.3428, lon: -120.3478, elev: 7200 },
+    { id: "mt-rose", name: "Mt. Rose", area: "East Shore NV", lat: 39.3147, lon: -119.8922, elev: 8260 },
+    { id: "diamond-peak", name: "Diamond Peak", area: "East Shore NV", lat: 39.2558, lon: -119.9387, elev: 6700 }
+  ];
 
-      const WEATHER_CODES = { 0: "☀️ Clear", 1: "🌤 Mostly Clear", 2: "⛅ Partly Cloudy", 3: "☁️ Overcast", 45: "🌫 Fog", 48: "🌫 Rime Fog", 51: "🌦 Light Drizzle", 53: "🌦 Drizzle", 55: "🌧 Heavy Drizzle", 61: "🌧 Light Rain", 63: "🌧 Rain", 65: "🌧 Heavy Rain", 71: "🌨 Light Snow", 73: "🌨 Snow", 75: "❄️ Heavy Snow", 77: "🌨 Snow Grains", 80: "🌦 Light Showers", 81: "🌧 Showers", 82: "⛈ Heavy Showers", 85: "🌨 Snow Showers", 86: "❄️ Heavy Snow Showers", 95: "⛈ Thunderstorm", 96: "⛈ Hail Storm", 99: "⛈ Heavy Hail" };
+  const WEATHER_CODES = { 0: "☀️ Clear", 1: "🌤 Mostly Clear", 2: "⛅ Partly Cloudy", 3: "☁️ Overcast", 45: "🌫 Fog", 48: "🌫 Rime Fog", 51: "🌦 Light Drizzle", 53: "🌦 Drizzle", 55: "🌧 Heavy Drizzle", 61: "🌧 Light Rain", 63: "🌧 Rain", 65: "🌧 Heavy Rain", 71: "🌨 Light Snow", 73: "🌨 Snow", 75: "❄️ Heavy Snow", 77: "🌨 Snow Grains", 80: "🌦 Light Showers", 81: "🌧 Showers", 82: "⛈ Heavy Showers", 85: "🌨 Snow Showers", 86: "❄️ Heavy Snow Showers", 95: "⛈ Thunderstorm", 96: "⛈ Hail Storm", 99: "⛈ Heavy Hail" };
 
-      /* ============ CONSTANTS ============ */
-      const CM_TO_INCHES = 0.3937;        // centimetres → inches
-      const M_TO_INCHES = 39.37;          // metres → inches
-      const METERS_PER_MILE = 1609.34;    // metres per mile
-      const DEFAULT_VISIBILITY_M = 10000; // API doesn't return visibility; use 10 km default
-      const CANVAS_BLOB_RADIUS = 155;     // heatmap radial gradient radius (px)
-      const CANVAS_FILL_HALF = 160;       // half-width of gradient fill rect (px)
-      const MAX_LOG_ENTRIES = 200;        // max agent log entries before trimming
-      const POLL_INTERVAL_S = 3600;       // weather API poll interval (seconds)
-      const FETCH_TIMEOUT_MS = 15000;     // main weather fetch timeout (ms)
-      const SEARCH_TIMEOUT_MS = 8000;     // Nominatim search timeout (ms)
-      const SNOW_FETCH_TIMEOUT_MS = 10000;// snow history fetch timeout (ms)
+  const VALID_TAGS = new Set(["tag-fog", "tag-sunny", "tag-windy", "tag-warm", "tag-cold", "tag-humid", "tag-powder", "tag-snowing", "tag-epic", "tag-good", "tag-fair", "tag-windhold", "tag-rainonsnow", "tag-slushrisk", "tag-nosnow", "hottest", "coldest", "foggiest", "windiest", "freezing", "above"]);
+  const BORDER_CLASSES = new Set(["hottest", "coldest", "foggiest", "windiest"]);
 
-      /* ============ UTILITY ============ */
-      const allowlistRe = /^[a-zA-Z0-9\s,.\-#'&\/]+$/;
-      function safeNum(v, min, max, fallback) {
-        const n = Number(v);
-        if (!Number.isFinite(n)) return fallback;
-        if (min !== undefined && n < min) return fallback;
-        if (max !== undefined && n > max) return fallback;
-        return n;
-      }
+  /* ============ CONSTANTS ============ */
+  const CM_TO_INCHES = 0.3937;
+  const M_TO_INCHES = 39.37;
+  const M_TO_MILES = 1 / 1609.34;
+  const POLL_INTERVAL_SEC = 60;
+  const MAX_LOG_ENTRIES = 200;
+  const API_TIMEOUT_MS = 15000;
+  const SEARCH_TIMEOUT_MS = 8000;
+  const SNOW_HISTORY_TIMEOUT_MS = 10000;
+  const SEARCH_COOLDOWN_MS = 1000;
+  const SEARCH_MAX_LENGTH = 120;
+  const TEMP_CHANGE_THRESHOLD = 2;     // degrees F
+  const CLOUD_CHANGE_THRESHOLD = 20;   // percent
+  const DIVERGENCE_ALERT_THRESHOLD = 12; // degrees F spread
+  const DEFAULT_VISIBILITY_M = 10000;
+  const SEARCH_STATUS_CLEAR_MS = 3000;
+  const MAP_RESIZE_DELAY_MS = 200;
+  const TAB_RESIZE_DELAY_MS = 100;
 
-      /* O(1) lookup Maps for neighborhoods/resorts */
-      const sfLookup = new Map(SF_NEIGHBORHOODS.map(n => [n.id, n]));
-      const tahoeLookup = new Map(TAHOE_RESORTS.map(r => [r.id, r]));
+  /* ============ SHARED UTILITIES ============ */
+  const allowlistRe = /^[a-zA-Z0-9\s,.\-#'&\/]+$/;
+  const dtFmt = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true, timeZone: "America/Los_Angeles" });
 
-      const dtFmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
-      function fmtTime(d) { return dtFmt.format(d || new Date()); }
+  function safeNum(v, min, max, fb) {
+    const n = Number(v);
+    return Number.isFinite(n) && n >= min && n <= max ? n : fb;
+  }
+  function fmtTime(d) { return dtFmt.format(d || new Date()); }
+  function $(id) { return document.getElementById(id); }
+  function setText(id, txt) { const e = $(id); if (e) e.textContent = txt; }
+  function safeClass(c) { return VALID_TAGS.has(c) ? c : ""; }
+  function clearChildren(el) { while (el.firstChild) el.removeChild(el.firstChild); }
 
-      function el(id) { return document.getElementById(id); }
-      function setText(id, txt) { const e = el(id); if (e) e.textContent = txt; }
+  function mkEl(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text) e.textContent = text;
+    return e;
+  }
 
-      /* Safe CSS class from set */
-      const VALID_TAGS = new Set(['tag-fog', 'tag-sunny', 'tag-windy', 'tag-warm', 'tag-cold', 'tag-humid', 'tag-powder', 'tag-snowing', 'tag-epic', 'tag-good', 'tag-fair', 'tag-windhold', 'tag-rainonsnow', 'tag-slushrisk', 'tag-nosnow', 'hottest', 'coldest', 'foggiest', 'windiest', 'freezing', 'above']);
-      function safeClass(cls) { return VALID_TAGS.has(cls) ? cls : ''; }
+  function fetchWithTimeout(url, ms) {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), ms);
+    return fetch(url, { signal: c.signal }).finally(() => clearTimeout(t));
+  }
 
-      /* ============ ELEMENT CACHES ============ */
-      const sfElCache = {};
-      const tahoeElCache = {};
-      const sfDataMap = new Map();
-      const tahoeDataMap = new Map();
-      let sfPrevData = new Map();
-      let tahoePrevData = new Map();
-      let sfDocsCount = 0;
+  /* ============ COLOR ============ */
+  const SF_PALETTE = [[45, 212, 191], [74, 222, 128], [250, 204, 21], [251, 146, 60], [239, 68, 68], [220, 38, 38]];
+  const TAHOE_PALETTE = [[168, 85, 247], [99, 102, 241], [34, 211, 238], [74, 222, 128], [250, 204, 21], [251, 146, 60]];
 
-      /* ============ LOG FACTORY ============ */
-      let sfLogEl = null, tahoeLogEl = null; // cached at init
-      function _appendLog(logEl, type, icon, msg) {
-        if (!logEl) return;
-        const entry = document.createElement('div');
-        entry.className = 'log-entry ' + type;
-        const iconSpan = document.createElement('span');
-        iconSpan.className = 'log-icon';
-        iconSpan.textContent = icon;
-        const tsSpan = document.createElement('span');
-        tsSpan.className = 'log-ts';
-        tsSpan.textContent = fmtTime();
-        const msgSpan = document.createElement('span');
-        msgSpan.className = 'log-msg';
-        msgSpan.textContent = msg;
-        entry.appendChild(iconSpan);
-        entry.appendChild(tsSpan);
-        entry.appendChild(msgSpan);
-        logEl.insertBefore(entry, logEl.firstChild);
-        while (logEl.children.length > MAX_LOG_ENTRIES) logEl.removeChild(logEl.lastChild);
-      }
-      function sfLog(type, icon, msg) { _appendLog(sfLogEl, type, icon, msg); }
-      function tahoeLog(type, icon, msg) { _appendLog(tahoeLogEl, type, icon, msg); }
+  function lerpColor(value, min, range, palette) {
+    if (value == null) return "#4a5570";
+    const t = Math.max(0, Math.min(1, (value - min) / range));
+    const idx = t * (palette.length - 1);
+    const i = Math.floor(idx), frac = idx - i;
+    const c1 = palette[Math.min(i, palette.length - 1)];
+    const c2 = palette[Math.min(i + 1, palette.length - 1)];
+    return `rgb(${Math.round(c1[0] + (c2[0] - c1[0]) * frac)},${Math.round(c1[1] + (c2[1] - c1[1]) * frac)},${Math.round(c1[2] + (c2[2] - c1[2]) * frac)})`;
+  }
+  const sfTempColor = f => lerpColor(f, 55, 20, SF_PALETTE);
+  const tahoeTempColor = f => lerpColor(f, 18, 18, TAHOE_PALETTE);
 
-      /* ============ TEMPERATURE COLOR ============ */
-      const SF_PALETTE = [[45, 212, 191], [74, 222, 128], [250, 204, 21], [251, 146, 60], [239, 68, 68], [220, 38, 38]];
-      const TAHOE_PALETTE = [[168, 85, 247], [99, 102, 241], [34, 211, 238], [74, 222, 128], [250, 204, 21], [251, 146, 60]];
-      function lerpColor(value, min, range, palette) {
-        if (value == null) return '#4a5570';
-        const t = Math.max(0, Math.min(1, (value - min) / range));
-        const idx = t * (palette.length - 1);
-        const i = Math.floor(idx);
-        const frac = idx - i;
-        const c1 = palette[Math.min(i, palette.length - 1)];
-        const c2 = palette[Math.min(i + 1, palette.length - 1)];
-        return 'rgb(' + Math.round(c1[0] + (c2[0] - c1[0]) * frac) + ',' + Math.round(c1[1] + (c2[1] - c1[1]) * frac) + ',' + Math.round(c1[2] + (c2[2] - c1[2]) * frac) + ')';
-      }
-      function sfTempColor(f) { return lerpColor(f, 55, 20, SF_PALETTE); }
-      function tahoeTempColor(f) { return lerpColor(f, 18, 18, TAHOE_PALETTE); }
+  /* ============ LOG FACTORY ============ */
+  function createLogger(logElId) {
+    let logEl = null;
+    function log(type, icon, msg) {
+      if (!logEl) logEl = $(logElId);
+      if (!logEl) return;
+      const entry = mkEl("div", "log-entry " + type);
+      entry.appendChild(mkEl("span", "log-icon", icon));
+      entry.appendChild(mkEl("span", "log-ts", fmtTime()));
+      entry.appendChild(mkEl("span", "log-msg", msg));
+      logEl.insertBefore(entry, logEl.firstChild);
+      while (logEl.children.length > MAX_LOG_ENTRIES) logEl.removeChild(logEl.lastChild);
+    }
+    return log;
+  }
+  const sfLog = createLogger("sf-agent-log");
+  const tahoeLog = createLogger("tahoe-agent-log");
 
-      /* DRY helper: clear a tags container and render an array of {cls, text} tags */
-      function renderTags(containerEl, tags) {
-        while (containerEl.firstChild) containerEl.removeChild(containerEl.firstChild);
-        tags.forEach(t => {
-          const span = document.createElement('span');
-          span.className = 'tag ' + safeClass(t.cls);
-          span.textContent = t.text;
-          containerEl.appendChild(span);
+  /* ============ STATE ============ */
+  const sfDataMap = new Map(), tahoeDataMap = new Map();
+  let sfPrevData = new Map(), tahoePrevData = new Map();
+  let tahoeAutoLoaded = false;
+
+  /* ============ CARD BUILDER FACTORY ============ */
+  function buildCards(gridId, items, prefix, metricNames, elCache, extraSetup) {
+    const grid = $(gridId), frag = document.createDocumentFragment();
+    items.forEach(item => {
+      const card = mkEl("div", "nb-card");
+      card.id = prefix + "-card-" + item.id;
+
+      const hdr = mkEl("div", "card-header");
+      const hdrL = mkEl("div");
+      hdrL.appendChild(mkEl("div", "card-name", item.name));
+      hdrL.appendChild(mkEl("div", "card-zone", item.zone || (item.area + " · " + item.elev + " ft")));
+      hdr.appendChild(hdrL);
+      hdr.appendChild(mkEl("div", "card-emoji", item.emoji || "⛷"));
+      card.appendChild(hdr);
+
+      const tempEl = mkEl("div", "card-temp");
+      tempEl.id = prefix + "-temp-" + item.id;
+      tempEl.textContent = "—°F";
+      card.appendChild(tempEl);
+
+      const cached = { card, tempEl };
+
+      if (extraSetup) extraSetup(card, item, cached);
+
+      const mg = mkEl("div", "card-metrics");
+      metricNames.forEach(mn => {
+        const row = mkEl("div", "card-metric");
+        row.appendChild(mkEl("span", null, mn));
+        const val = mkEl("span");
+        val.id = prefix + "-m-" + item.id + "-" + mn.toLowerCase().replace(/\s/g, "");
+        val.textContent = "—";
+        row.appendChild(val);
+        mg.appendChild(row);
+      });
+      card.appendChild(mg);
+
+      const tagsEl = mkEl("div", "card-tags");
+      tagsEl.id = prefix + "-tags-" + item.id;
+      card.appendChild(tagsEl);
+      cached.tagsEl = tagsEl;
+
+      const upd = mkEl("div", "card-updated");
+      upd.id = prefix + "-upd-" + item.id;
+      upd.textContent = "Awaiting data...";
+      card.appendChild(upd);
+      cached.upd = upd;
+
+      frag.appendChild(card);
+      elCache[item.id] = cached;
+    });
+    grid.appendChild(frag);
+  }
+
+  const sfElCache = {}, tahoeElCache = {};
+
+  /* ============ MAPS ============ */
+  let sfMap, tahoeMap, sfHeatLayer, tahoeHeatLayer, tahoeInitialized = false;
+  const sfMarkers = new Map(), tahoeMarkers = new Map();
+
+  function initMap(mapId, center, zoom, bounds, items, markerMap, mode) {
+    const map = L.map(mapId, { center, zoom, maxBounds: bounds, maxBoundsViscosity: 1 });
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: "CARTO/OSM", subdomains: "abcd", maxZoom: mode === "sf" ? 19 : 15
+    }).addTo(map);
+    items.forEach(item => {
+      markerMap.set(item.id, L.circleMarker([item.lat, item.lon], {
+        radius: mode === "sf" ? 18 : 14, fillOpacity: 0, opacity: 0, interactive: true
+      }).addTo(map));
+    });
+    const overlay = createCanvasOverlay(mode);
+    overlay.addTo(map);
+    return { map, overlay };
+  }
+
+  function populateDropdown(selId, items) {
+    const sel = $(selId);
+    items.forEach(item => {
+      const o = mkEl("option");
+      o.value = item.id;
+      o.textContent = item.name;
+      sel.appendChild(o);
+    });
+  }
+
+  /* ============ CANVAS HEATMAP OVERLAY ============ */
+  function createCanvasOverlay(mode) {
+    const items = mode === "sf" ? SF_NEIGHBORHOODS : TAHOE_RESORTS;
+    const dataMap = mode === "sf" ? sfDataMap : tahoeDataMap;
+    const colorFn = mode === "sf" ? sfTempColor : tahoeTempColor;
+
+    return new (L.Layer.extend({
+      onAdd(map) {
+        this._map = map;
+        this._canvas = document.createElement("canvas");
+        Object.assign(this._canvas.style, { position: "absolute", pointerEvents: "none", zIndex: "250" });
+        map.getPane("overlayPane").appendChild(this._canvas);
+        map.on("moveend zoomend resize", this._schedule, this);
+        this._render();
+      },
+      onRemove(map) {
+        map.off("moveend zoomend resize", this._schedule, this);
+        if (this._raf) cancelAnimationFrame(this._raf);
+        this._canvas.remove();
+      },
+      _schedule() {
+        if (this._raf) cancelAnimationFrame(this._raf);
+        this._raf = requestAnimationFrame(() => { this._raf = null; this._render(); });
+      },
+      _render() {
+        if (!this._map) return;
+        const map = this._map, sz = map.getSize(), tl = map.containerPointToLayerPoint([0, 0]);
+        L.DomUtil.setPosition(this._canvas, tl);
+        this._canvas.width = sz.x;
+        this._canvas.height = sz.y;
+        const ctx = this._canvas.getContext("2d");
+        ctx.clearRect(0, 0, sz.x, sz.y);
+
+        // Pass 1: heat blobs
+        items.forEach(item => {
+          const d = dataMap.get(item.id);
+          if (!d) return;
+          const pt = map.latLngToContainerPoint([item.lat, item.lon]);
+          const color = colorFn(d.tempF);
+          const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 155);
+          grad.addColorStop(0, color.replace("rgb", "rgba").replace(")", ",0.35)"));
+          grad.addColorStop(1, color.replace("rgb", "rgba").replace(")", ",0)"));
+          ctx.fillStyle = grad;
+          ctx.fillRect(pt.x - 160, pt.y - 160, 320, 320);
         });
-      }
 
-      /* ============ FETCH WITH TIMEOUT ============ */
-      function fetchWithTimeout(url, timeoutMs) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
-      }
-
-      /* ============ MAPS ============ */
-      let sfMap, tahoeMap, sfHeatLayer, tahoeHeatLayer;
-      let tahoeInitialized = false;
-      const sfMarkers = new Map();
-      const tahoeMarkers = new Map();
-
-      function initSFMap() {
-        sfMap = L.map('sf-map', {
-          center: [37.768, -122.447],
-          zoom: 13,
-          minZoom: 12,
-          maxBounds: [[37.7, -122.55], [37.84, -122.34]],
-          maxBoundsViscosity: 1.0
-        });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-          attribution: '© CARTO © OSM',
-          subdomains: 'abcd', maxZoom: 19
-        }).addTo(sfMap);
-
-        // Add invisible CircleMarkers
-        SF_NEIGHBORHOODS.forEach(nb => {
-          const marker = L.circleMarker([nb.lat, nb.lon], {
-            radius: 18, fillOpacity: 0, opacity: 0, interactive: true
-          }).addTo(sfMap);
-          sfMarkers.set(nb.id, marker);
+        // Pass 2: labels
+        items.forEach(item => {
+          const d = dataMap.get(item.id);
+          if (!d) return;
+          const pt = map.latLngToContainerPoint([item.lat, item.lon]);
+          ctx.textAlign = "center";
+          ctx.shadowColor = "rgba(0,0,0,0.7)";
+          ctx.shadowBlur = 6;
+          ctx.font = "bold 19px Inter,sans-serif";
+          ctx.fillStyle = "#fff";
+          ctx.fillText(d.tempF !== null ? Math.round(d.tempF) + "°F" : "—", pt.x, pt.y - 4);
+          ctx.font = "600 10.5px Inter,sans-serif";
+          ctx.fillStyle = "rgba(255,255,255,0.8)";
+          ctx.fillText(item.name, pt.x, pt.y + 14);
+          ctx.shadowBlur = 0;
         });
 
-        // Heatmap overlay
-        sfHeatLayer = createCanvasOverlay('sf');
-        sfHeatLayer.addTo(sfMap);
-
-        // Populate dropdown
-        const sel = el('sf-nbr-select');
-        SF_NEIGHBORHOODS.forEach(nb => {
-          const opt = document.createElement('option');
-          opt.value = nb.id;
-          opt.textContent = nb.name;
-          sel.appendChild(opt);
+        // Pass 3: precipitation rings
+        items.forEach(item => {
+          const d = dataMap.get(item.id);
+          if (!d || !d.precipitation || d.precipitation <= 0) return;
+          const pt = map.latLngToContainerPoint([item.lat, item.lon]);
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 30, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(74,158,255,0.4)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.font = "500 9px JetBrains Mono,monospace";
+          ctx.fillStyle = "rgba(74,158,255,0.9)";
+          ctx.textAlign = "center";
+          ctx.fillText("🌧 " + d.precipitation.toFixed(1) + "mm/hr", pt.x, pt.y + 32);
         });
+      },
+      redraw() { this._render(); }
+    }))();
+  }
+
+  /* ============ POPUP BUILDER ============ */
+  function bindPopup(markerMap, id, name, lines) {
+    const marker = markerMap.get(id);
+    if (!marker) return;
+    if (marker.getPopup()) marker.unbindPopup();
+    const div = mkEl("div");
+    div.appendChild(mkEl("strong", null, name));
+    const pre = mkEl("pre");
+    pre.style.cssText = "margin:4px 0;font-size:.78rem;font-family:JetBrains Mono,monospace;white-space:pre-wrap";
+    pre.textContent = lines.join("\n");
+    div.appendChild(pre);
+    marker.bindPopup(div);
+  }
+
+  /* ============ TAG RENDERER ============ */
+  function renderTags(tagsEl, tags) {
+    clearChildren(tagsEl);
+    tags.forEach(t => {
+      const s = mkEl("span", "tag " + safeClass(t.cls) + (t.alert ? " tag-alert" : ""), t.text);
+      tagsEl.appendChild(s);
+    });
+  }
+
+  /* ============ API FETCH — SHARED ============ */
+  function parseCurrentFields(c, isTahoe) {
+    const d = {
+      tempF: safeNum(c.temperature_2m, -60, 150, null),
+      humidity: safeNum(c.relative_humidity_2m, 0, 100, null),
+      wind: safeNum(c.wind_speed_10m, 0, 300, null),
+      cloud: safeNum(c.cloud_cover, 0, 100, null),
+      weatherCode: safeNum(c.weather_code, 0, 99, 0),
+      precipitation: safeNum(c.precipitation, 0, 500, 0)
+    };
+    if (isTahoe) {
+      d.snowfall = safeNum(c.snowfall, 0, 500, 0);
+      d.snowDepthM = safeNum(c.snow_depth, 0, 100, 0);
+    }
+    return d;
+  }
+
+  async function fetchData(items, currentParams, isTahoe, dataMap, prevData, log, onUpdate) {
+    const lats = items.map(n => n.lat).join(",");
+    const lons = items.map(n => n.lon).join(",");
+    const url = "https://api.open-meteo.com/v1/forecast?latitude=" + lats + "&longitude=" + lons +
+      "&current=" + currentParams + "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/Los_Angeles";
+    try {
+      const resp = await fetchWithTimeout(url, API_TIMEOUT_MS);
+      if (!resp.ok) {
+        log("alert", "⚠️", "API returned HTTP " + resp.status);
+        return false;
       }
+      const json = await resp.json();
+      const results = Array.isArray(json) ? json : [json];
+      log("info", "📡", "Poll: fetched " + results.length + " locations");
 
-      function initTahoeMap() {
-        if (tahoeInitialized) return;
-        tahoeInitialized = true;
+      results.forEach((r, i) => {
+        if (!r.current || i >= items.length) return;
+        const item = items[i];
+        const data = parseCurrentFields(r.current, isTahoe);
+        const prev = prevData.get(item.id);
 
-        tahoeMap = L.map('tahoe-map', {
-          center: [39.1, -120.1],
-          zoom: 8,
-          minZoom: 7,
-          maxBounds: [[38.45, -120.65], [39.55, -119.65]],
-          maxBoundsViscosity: 1.0
-        });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-          attribution: '© CARTO © OSM',
-          subdomains: 'abcd', maxZoom: 15
-        }).addTo(tahoeMap);
-
-        TAHOE_RESORTS.forEach(r => {
-          const marker = L.circleMarker([r.lat, r.lon], {
-            radius: 14, fillOpacity: 0, opacity: 0, interactive: true
-          }).addTo(tahoeMap);
-          tahoeMarkers.set(r.id, marker);
-        });
-
-        tahoeHeatLayer = createCanvasOverlay('tahoe');
-        tahoeHeatLayer.addTo(tahoeMap);
-
-        const sel = el('tahoe-resort-select');
-        TAHOE_RESORTS.forEach(r => {
-          const opt = document.createElement('option');
-          opt.value = r.id;
-          opt.textContent = r.name;
-          sel.appendChild(opt);
-        });
-
-        setTimeout(() => tahoeMap.invalidateSize(), 200);
-
-        // Tahoe search + autocomplete (must be after tahoeMap is created)
-        const tahoeViewbox = '-120.65,38.45,-119.65,39.55';
-        el('tahoe-search-btn').addEventListener('click', () => doSearch('tahoe-search-input', 'tahoe-search-status', 'tahoe-autocomplete', tahoeMap, tahoeViewbox));
-        el('tahoe-search-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('tahoe-search-input', 'tahoe-search-status', 'tahoe-autocomplete', tahoeMap, tahoeViewbox); });
-        setupAutocomplete('tahoe-search-input', 'tahoe-autocomplete', tahoeMap, tahoeViewbox);
-      }
-
-      /* ============ CANVAS HEATMAP OVERLAY ============ */
-      function createCanvasOverlay(mode) {
-        const CanvasOverlay = L.Layer.extend({
-          onAdd(map) {
-            this._map = map;
-            this._canvas = document.createElement('canvas');
-            this._canvas.style.position = 'absolute';
-            this._canvas.style.pointerEvents = 'none';
-            this._canvas.style.zIndex = '250';
-            const pane = map.getPane('overlayPane');
-            pane.appendChild(this._canvas);
-            map.on('moveend zoomend resize', this._scheduleUpdate, this);
-            this._update();
-          },
-          onRemove(map) {
-            map.off('moveend zoomend resize', this._scheduleUpdate, this);
-            if (this._rafId) cancelAnimationFrame(this._rafId);
-            this._canvas.remove();
-          },
-          _scheduleUpdate() {
-            if (this._rafId) cancelAnimationFrame(this._rafId);
-            this._rafId = requestAnimationFrame(() => { this._rafId = null; this._update(); });
-          },
-          _update() {
-            if (!this._map) return;
-            const map = this._map;
-            const size = map.getSize();
-            const topLeft = map.containerPointToLayerPoint([0, 0]);
-            L.DomUtil.setPosition(this._canvas, topLeft);
-            this._canvas.width = size.x;
-            this._canvas.height = size.y;
-            this._draw();
-          },
-          _draw() {
-            const ctx = this._canvas.getContext('2d');
-            const map = this._map;
-            const w = this._canvas.width, h = this._canvas.height;
-            ctx.clearRect(0, 0, w, h);
-
-            const items = mode === 'sf' ? SF_NEIGHBORHOODS : TAHOE_RESORTS;
-            const dataMap = mode === 'sf' ? sfDataMap : tahoeDataMap;
-            const colorFn = mode === 'sf' ? sfTempColor : tahoeTempColor;
-
-            // Pass 1: Radial gradient blobs
-            items.forEach(item => {
-              const data = dataMap.get(item.id);
-              if (!data) return;
-              const pt = map.latLngToContainerPoint([item.lat, item.lon]);
-              const temp = data.tempF;
-              const color = colorFn(temp);
-              const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, CANVAS_BLOB_RADIUS);
-              grad.addColorStop(0, color.replace('rgb', 'rgba').replace(')', ',0.35)'));
-              grad.addColorStop(1, color.replace('rgb', 'rgba').replace(')', ',0)'));
-              ctx.fillStyle = grad;
-              ctx.fillRect(pt.x - CANVAS_FILL_HALF, pt.y - CANVAS_FILL_HALF, CANVAS_FILL_HALF * 2, CANVAS_FILL_HALF * 2);
-            });
-
-            // Pass 2: Text labels
-            items.forEach(item => {
-              const data = dataMap.get(item.id);
-              if (!data) return;
-              const pt = map.latLngToContainerPoint([item.lat, item.lon]);
-              const temp = data.tempF;
-              // Temperature
-              ctx.font = 'bold 19px Inter, sans-serif';
-              ctx.textAlign = 'center';
-              ctx.fillStyle = '#fff';
-              ctx.shadowColor = 'rgba(0,0,0,0.7)';
-              ctx.shadowBlur = 6;
-              ctx.fillText(temp !== null ? Math.round(temp) + '°F' : '—', pt.x, pt.y - 4);
-              // Name
-              ctx.font = '600 10.5px Inter, sans-serif';
-              ctx.fillStyle = 'rgba(255,255,255,0.8)';
-              ctx.fillText(item.name, pt.x, pt.y + 14);
-              ctx.shadowBlur = 0;
-            });
-
-            // Pass 3: Rain overlays
-            items.forEach(item => {
-              const data = dataMap.get(item.id);
-              if (!data || !data.precipitation || data.precipitation <= 0) return;
-              const pt = map.latLngToContainerPoint([item.lat, item.lon]);
-              // Blue pulse ring
-              ctx.beginPath();
-              ctx.arc(pt.x, pt.y, 30, 0, Math.PI * 2);
-              ctx.strokeStyle = 'rgba(74,158,255,0.4)';
-              ctx.lineWidth = 2;
-              ctx.stroke();
-              // Label
-              ctx.font = '500 9px JetBrains Mono, monospace';
-              ctx.fillStyle = 'rgba(74,158,255,0.9)';
-              ctx.textAlign = 'center';
-              const pStr = mode === 'tahoe' ? (data.precipitation * 0.0394).toFixed(1) : data.precipitation.toFixed(1);
-              ctx.fillText('🌧 ' + pStr + 'mm/hr', pt.x, pt.y + 32);
-            });
-          },
-          redraw() { this._update(); }
-        });
-        return new CanvasOverlay();
-      }
-
-      /* ============ BUILD CARDS ============ */
-      function buildSFCards() {
-        const grid = el('sf-cards-grid');
-        const frag = document.createDocumentFragment();
-        SF_NEIGHBORHOODS.forEach(nb => {
-          const card = document.createElement('div');
-          card.className = 'nb-card';
-          card.id = 'sf-card-' + nb.id;
-          // Header
-          const hdr = document.createElement('div'); hdr.className = 'card-header';
-          const hdrL = document.createElement('div');
-          const nameEl = document.createElement('div'); nameEl.className = 'card-name'; nameEl.textContent = nb.name;
-          const zoneEl = document.createElement('div'); zoneEl.className = 'card-zone'; zoneEl.textContent = nb.zone;
-          hdrL.appendChild(nameEl); hdrL.appendChild(zoneEl);
-          const emojiEl = document.createElement('div'); emojiEl.className = 'card-emoji'; emojiEl.textContent = nb.emoji;
-          hdr.appendChild(hdrL); hdr.appendChild(emojiEl);
-          card.appendChild(hdr);
-          // Temp
-          const tempEl = document.createElement('div'); tempEl.className = 'card-temp'; tempEl.id = 'sf-temp-' + nb.id; tempEl.textContent = '—°F';
-          card.appendChild(tempEl);
-          // Metrics grid
-          const mg = document.createElement('div'); mg.className = 'card-metrics'; mg.id = 'sf-metrics-' + nb.id;
-          const metricNames = ['Wind', 'Humidity', 'Cloud Cover', 'Condition', 'Precipitation'];
-          metricNames.forEach(mn => {
-            const row = document.createElement('div'); row.className = 'card-metric';
-            const lbl = document.createElement('span'); lbl.textContent = mn;
-            const val = document.createElement('span'); val.id = 'sf-m-' + nb.id + '-' + mn.toLowerCase().replace(/\s/g, ''); val.textContent = '—';
-            row.appendChild(lbl); row.appendChild(val); mg.appendChild(row);
-          });
-          card.appendChild(mg);
-          // Tags
-          const tagsEl = document.createElement('div'); tagsEl.className = 'card-tags'; tagsEl.id = 'sf-tags-' + nb.id;
-          card.appendChild(tagsEl);
-          // Updated
-          const upd = document.createElement('div'); upd.className = 'card-updated'; upd.id = 'sf-upd-' + nb.id; upd.textContent = 'Awaiting data...';
-          card.appendChild(upd);
-          frag.appendChild(card);
-          sfElCache[nb.id] = { card, tempEl, tagsEl, upd };
-        });
-        grid.appendChild(frag);
-      }
-
-      function buildTahoeCards() {
-        const grid = el('tahoe-cards-grid');
-        const frag = document.createDocumentFragment();
-        TAHOE_RESORTS.forEach(r => {
-          const card = document.createElement('div'); card.className = 'nb-card'; card.id = 'tahoe-card-' + r.id;
-          const hdr = document.createElement('div'); hdr.className = 'card-header';
-          const hdrL = document.createElement('div');
-          const nameEl = document.createElement('div'); nameEl.className = 'card-name'; nameEl.textContent = r.name;
-          const zoneEl = document.createElement('div'); zoneEl.className = 'card-zone'; zoneEl.textContent = r.area + ' · ' + r.elev + ' ft';
-          hdrL.appendChild(nameEl); hdrL.appendChild(zoneEl);
-          const emojiEl = document.createElement('div'); emojiEl.className = 'card-emoji'; emojiEl.textContent = '⛷';
-          hdr.appendChild(hdrL); hdr.appendChild(emojiEl);
-          card.appendChild(hdr);
-          const tempEl = document.createElement('div'); tempEl.className = 'card-temp'; tempEl.id = 'tahoe-temp-' + r.id; tempEl.textContent = '—°F';
-          card.appendChild(tempEl);
-          // Freeze badge
-          const freezeEl = document.createElement('div'); freezeEl.className = 'freeze-badge'; freezeEl.id = 'tahoe-freeze-' + r.id;
-          card.appendChild(freezeEl);
-          const mg = document.createElement('div'); mg.className = 'card-metrics'; mg.id = 'tahoe-metrics-' + r.id;
-          ['Wind', 'Snowfall', 'Snow Depth', 'Visibility', 'Cloud Cover', 'Condition'].forEach(mn => {
-            const row = document.createElement('div'); row.className = 'card-metric';
-            const lbl = document.createElement('span'); lbl.textContent = mn;
-            const val = document.createElement('span'); val.id = 'tahoe-m-' + r.id + '-' + mn.toLowerCase().replace(/\s/g, ''); val.textContent = '—';
-            row.appendChild(lbl); row.appendChild(val); mg.appendChild(row);
-          });
-          card.appendChild(mg);
-          const tagsEl = document.createElement('div'); tagsEl.className = 'card-tags'; tagsEl.id = 'tahoe-tags-' + r.id;
-          card.appendChild(tagsEl);
-          const upd = document.createElement('div'); upd.className = 'card-updated'; upd.id = 'tahoe-upd-' + r.id; upd.textContent = 'Awaiting data...';
-          card.appendChild(upd);
-          frag.appendChild(card);
-          tahoeElCache[r.id] = { card, tempEl, freezeEl, tagsEl, upd };
-        });
-        grid.appendChild(frag);
-      }
-
-      /* ============ DATA CACHE (localStorage) ============ */
-      function saveCachedData(mode) {
-        try {
-          const dataMap = mode === 'sf' ? sfDataMap : tahoeDataMap;
-          const obj = {};
-          dataMap.forEach((v, k) => { obj[k] = v; });
-          localStorage.setItem('microclimate_' + mode, JSON.stringify({ ts: Date.now(), data: obj }));
-        } catch (e) { /* quota exceeded, ignore */ }
-      }
-      function loadCachedData(mode) {
-        try {
-          const raw = localStorage.getItem('microclimate_' + mode);
-          if (!raw) return false;
-          const parsed = JSON.parse(raw);
-          if (!parsed || !parsed.data) return false;
-          const dataMap = mode === 'sf' ? sfDataMap : tahoeDataMap;
-          const logFn = mode === 'sf' ? sfLog : tahoeLog;
-          const entries = Object.entries(parsed.data);
-          if (entries.length === 0) return false;
-          entries.forEach(([k, v]) => { dataMap.set(k, v); });
-          const age = Math.round((Date.now() - parsed.ts) / 60000);
-          logFn('info', '💾', 'Loaded cached data (' + age + ' min old, ' + entries.length + ' locations)');
-          if (mode === 'sf') updateSFUI(); else updateTahoeUI();
-          return true;
-        } catch (e) { return false; }
-      }
-
-      /* ============ API FETCH ============ */
-      const FETCH_CONFIGS = {
-        sf: {
-          items: SF_NEIGHBORHOODS,
-          fields: 'temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,weather_code,precipitation',
-          dataMap: sfDataMap,
-          getPrevData: () => sfPrevData,
-          setPrevData: m => { sfPrevData = m; },
-          logFn: sfLog,
-          updateUI: () => updateSFUI(),
-          parseItem: c => ({
-            tempF: safeNum(c.temperature_2m, -50, 150, null),
-            humidity: safeNum(c.relative_humidity_2m, 0, 100, null),
-            wind: safeNum(c.wind_speed_10m, 0, 200, null),
-            cloud: safeNum(c.cloud_cover, 0, 100, null),
-            weatherCode: safeNum(c.weather_code, 0, 99, 0),
-            precipitation: safeNum(c.precipitation, 0, 500, 0)
-          }),
-          logChanges: (name, data, prev, log) => {
+        // Change detection
+        if (prev) {
+          if (!isTahoe) {
             if (data.tempF !== null && prev.tempF !== null) {
               const diff = data.tempF - prev.tempF;
-              if (Math.abs(diff) >= 2) {
-                log('update', '🌡', name + ': ' + (diff > 0 ? 'warming ↑' : 'cooling ↓') + ' ' + Math.abs(diff).toFixed(1) + '°F');
-              }
+              if (Math.abs(diff) >= TEMP_CHANGE_THRESHOLD) log("update", "🌡", item.name + ": " + (diff > 0 ? "warming ↑" : "cooling ↓") + " " + Math.abs(diff).toFixed(1) + "°F");
             }
-            if (data.cloud !== null && prev.cloud !== null && Math.abs(data.cloud - prev.cloud) >= 20) {
-              log('update', '🌫', name + ': ' + (data.cloud > prev.cloud ? 'fogging in' : 'clearing up') + ' (' + data.cloud + '% cloud)');
-            }
-            if (data.precipitation > 0 && (!prev.precipitation || prev.precipitation === 0)) {
-              log('alert', '🌧', name + ': rain start/intensifying (' + data.precipitation.toFixed(1) + 'mm)');
-            }
-            if (data.precipitation === 0 && prev.precipitation > 0) {
-              log('update', '☀️', name + ': rain stopped');
-            }
-          }
-        },
-        tahoe: {
-          items: TAHOE_RESORTS,
-          fields: 'temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,weather_code,precipitation,snowfall,snow_depth',
-          dataMap: tahoeDataMap,
-          getPrevData: () => tahoePrevData,
-          setPrevData: m => { tahoePrevData = m; },
-          logFn: tahoeLog,
-          updateUI: () => updateTahoeUI(),
-          parseItem: c => ({
-            tempF: safeNum(c.temperature_2m, -60, 120, null),
-            humidity: safeNum(c.relative_humidity_2m, 0, 100, null),
-            wind: safeNum(c.wind_speed_10m, 0, 300, null),
-            cloud: safeNum(c.cloud_cover, 0, 100, null),
-            weatherCode: safeNum(c.weather_code, 0, 99, 0),
-            precipitation: safeNum(c.precipitation, 0, 500, 0),
-            snowfall: safeNum(c.snowfall, 0, 500, 0),
-            snowDepthM: safeNum(c.snow_depth, 0, 100, 0)
-          }),
-          logChanges: (name, data, prev, log) => {
-            if (data.snowfall > 0 && (!prev.snowfall || prev.snowfall === 0)) {
-              log('alert', '❄️', name + ': snow start! ' + data.snowfall.toFixed(1) + 'cm');
-            }
-            if (data.snowfall === 0 && prev.snowfall > 0) {
-              log('update', '🌤', name + ': snow stopped');
-            }
-            if (data.precipitation > 0 && data.tempF > 36) {
-              log('alert', '🌧', name + ': RAIN ON SNOW! temp=' + data.tempF.toFixed(0) + '°F');
-            }
-          }
-        }
-      };
-
-      async function fetchWeatherData(mode) {
-        const cfg = FETCH_CONFIGS[mode];
-        const lats = cfg.items.map(n => n.lat).join(',');
-        const lons = cfg.items.map(n => n.lon).join(',');
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lons + '&current=' + cfg.fields + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/Los_Angeles';
-        try {
-          const resp = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
-          if (resp.status === 429) {
-            cfg.logFn('alert', '🚫', 'API rate limit exceeded — daily quota hit. Data will load from cache if available.');
-            loadCachedData(mode);
-            return false;
-          }
-          if (!resp.ok) {
-            cfg.logFn('alert', '⚠️', 'API returned HTTP ' + resp.status);
-            loadCachedData(mode);
-            return false;
-          }
-          const json = await resp.json();
-          if (json.error) {
-            cfg.logFn('alert', '🚫', 'API error: ' + (json.reason || 'unknown'));
-            loadCachedData(mode);
-            return false;
-          }
-          const results = Array.isArray(json) ? json : [json];
-          cfg.logFn('info', '📡', 'Poll status: fetched ' + results.length + ' locations');
-          const prevData = cfg.getPrevData();
-          results.forEach((r, i) => {
-            if (!r.current || i >= cfg.items.length) return;
-            const item = cfg.items[i];
-            const data = cfg.parseItem(r.current);
-            const prev = prevData.get(item.id);
-            if (prev) cfg.logChanges(item.name, data, prev, cfg.logFn);
-            cfg.dataMap.set(item.id, data);
-          });
-          cfg.setPrevData(new Map([...cfg.dataMap].map(([k, v]) => [k, Object.assign({}, v)])));
-          saveCachedData(mode);
-          cfg.updateUI();
-          return true;
-        } catch (e) {
-          cfg.logFn('alert', '⚠️', 'API fetch failed: ' + e.message);
-          loadCachedData(mode);
-          return false;
-        }
-      }
-
-      function fetchSFData() { return fetchWeatherData('sf'); }
-      function fetchTahoeData() { return fetchWeatherData('tahoe'); }
-
-      /* ============ UPDATE UI ============ */
-      function updateSFUI() {
-        // Single-pass extremes
-        let warmest = null, coldest = null, windiest = null, foggiest = null, humid = null;
-        let wT = -Infinity, cT = Infinity, wiW = -Infinity, foC = -Infinity, huH = -Infinity;
-        const sorted = [];
-
-        SF_NEIGHBORHOODS.forEach(nb => {
-          const d = sfDataMap.get(nb.id);
-          if (!d) return;
-          sorted.push({ nb, d });
-          if (d.tempF !== null && d.tempF > wT) { wT = d.tempF; warmest = nb; }
-          if (d.tempF !== null && d.tempF < cT) { cT = d.tempF; coldest = nb; }
-          if (d.wind !== null && d.wind > wiW) { wiW = d.wind; windiest = nb; }
-          if (d.cloud !== null && d.cloud > foC) { foC = d.cloud; foggiest = nb; }
-          if (d.humidity !== null && d.humidity > huH) { huH = d.humidity; humid = nb; }
-        });
-
-        // Stats bar
-        if (warmest) setText('sf-warmest', warmest.name + ' ' + wT.toFixed(1) + '°F');
-        if (coldest) setText('sf-coldest', coldest.name + ' ' + cT.toFixed(1) + '°F');
-        if (warmest && coldest) setText('sf-spread', (wT - cT).toFixed(1) + '°F');
-        if (windiest) setText('sf-windiest', windiest.name + ' ' + wiW.toFixed(1) + ' mph');
-        if (foggiest) setText('sf-foggiest', foggiest.name + ' ' + foC.toFixed(0) + '%');
-        sfDocsCount++;
-        setText('sf-docs-count', sfDocsCount);
-
-        // Differentials
-        if (warmest) setText('sf-diff-warmest', warmest.name + ' · ' + wT.toFixed(1) + '°F');
-        if (coldest) setText('sf-diff-coldest', coldest.name + ' · ' + cT.toFixed(1) + '°F');
-        if (warmest && coldest) setText('sf-diff-delta', (wT - cT).toFixed(1) + '°F');
-        if (windiest) setText('sf-diff-windiest', windiest.name + ' · ' + wiW.toFixed(1) + ' mph');
-        if (foggiest) setText('sf-diff-foggiest', foggiest.name + ' · ' + foC.toFixed(0) + '%');
-        if (humid) setText('sf-diff-humid', humid.name + ' · ' + huH.toFixed(0) + '%');
-
-        // Sort by temp for doc snapshot
-        sorted.sort((a, b) => (b.d.tempF || 0) - (a.d.tempF || 0));
-
-        // Update cards
-        SF_NEIGHBORHOODS.forEach(nb => {
-          const d = sfDataMap.get(nb.id);
-          if (!d) return;
-          const cached = sfElCache[nb.id];
-          if (!cached) return;
-          // Temp
-          cached.tempEl.textContent = d.tempF !== null ? d.tempF.toFixed(1) + '°F' : '—°F';
-          cached.tempEl.style.color = sfTempColor(d.tempF);
-          // Metrics
-          setText('sf-m-' + nb.id + '-wind', d.wind !== null ? d.wind.toFixed(1) + ' mph' : '—');
-          setText('sf-m-' + nb.id + '-humidity', d.humidity !== null ? d.humidity.toFixed(0) + '%' : '—');
-          setText('sf-m-' + nb.id + '-cloudcover', d.cloud !== null ? d.cloud.toFixed(0) + '%' : '—');
-          setText('sf-m-' + nb.id + '-condition', WEATHER_CODES[d.weatherCode] || '—');
-          setText('sf-m-' + nb.id + '-precipitation', d.precipitation.toFixed(1) + ' mm');
-          // Tags
-          const tags = [];
-          if (d.cloud >= 70) tags.push({ cls: 'tag-fog', text: 'Fog' });
-          if (d.cloud < 30 && d.weatherCode <= 1) tags.push({ cls: 'tag-sunny', text: 'Sunny' });
-          if (d.wind >= 15) tags.push({ cls: 'tag-windy', text: 'Windy' });
-          if (d.tempF >= 68) tags.push({ cls: 'tag-warm', text: 'Warm' });
-          if (d.tempF < 55) tags.push({ cls: 'tag-cold', text: 'Cold' });
-          if (d.humidity >= 80) tags.push({ cls: 'tag-humid', text: 'Humid' });
-          renderTags(cached.tagsEl, tags);
-          // Accent border
-          cached.card.classList.remove('hottest', 'coldest', 'foggiest', 'windiest');
-          if (warmest && nb.id === warmest.id) cached.card.classList.add(safeClass('hottest'));
-          if (coldest && nb.id === coldest.id) cached.card.classList.add(safeClass('coldest'));
-          if (foggiest && nb.id === foggiest.id) cached.card.classList.add(safeClass('foggiest'));
-          if (windiest && nb.id === windiest.id) cached.card.classList.add(safeClass('windiest'));
-          cached.upd.textContent = 'Updated: ' + fmtTime();
-
-          // Update popup (unbind first to prevent leak)
-          const marker = sfMarkers.get(nb.id);
-          if (marker) {
-            if (marker.getPopup()) marker.unbindPopup();
-            const popup = document.createElement('div');
-            const h = document.createElement('strong'); h.textContent = nb.name;
-            popup.appendChild(h);
-            popup.appendChild(document.createElement('br'));
-            const info = document.createTextNode(
-              (WEATHER_CODES[d.weatherCode] || 'Unknown') + '\n' +
-              'Temp: ' + (d.tempF !== null ? d.tempF.toFixed(1) + '°F' : '—') + '\n' +
-              'Wind: ' + (d.wind !== null ? d.wind.toFixed(1) + ' mph' : '—') + '\n' +
-              'Humidity: ' + (d.humidity !== null ? d.humidity.toFixed(0) + '%' : '—') + '\n' +
-              'Cloud: ' + (d.cloud !== null ? d.cloud.toFixed(0) + '%' : '—')
-            );
-            const pre = document.createElement('pre');
-            pre.style.cssText = 'margin:4px 0;font-size:.78rem;font-family:JetBrains Mono,monospace;white-space:pre-wrap';
-            pre.appendChild(info);
-            popup.appendChild(pre);
-            marker.bindPopup(popup);
-          }
-        });
-
-        // Doc snapshot
-        let doc = '# SF Microclimate Report — ' + fmtTime() + '\n\n';
-        sorted.forEach(({ nb, d }) => {
-          doc += nb.emoji + ' ' + nb.name + ' (' + nb.zone + ')\n';
-          doc += '  Temp: ' + (d.tempF !== null ? d.tempF.toFixed(1) + '°F' : '—') + ' | Wind: ' + (d.wind !== null ? d.wind.toFixed(1) + ' mph' : '—') + '\n';
-          doc += '  Cloud: ' + (d.cloud !== null ? d.cloud.toFixed(0) + '%' : '—') + ' | ' + (WEATHER_CODES[d.weatherCode] || '—') + '\n\n';
-        });
-        el('sf-doc-snapshot').textContent = doc;
-
-        // Timestamp
-        const now = fmtTime();
-        setText('sf-last-updated', now);
-        setText('footer-time', now);
-
-        // Redraw heatmap
-        if (sfHeatLayer) sfHeatLayer.redraw();
-
-        // Check high divergence
-        if (warmest && coldest && (wT - cT) >= 12) {
-          sfLog('alert', '🔥', 'High divergence alert! Spread: ' + (wT - cT).toFixed(1) + '°F (' + warmest.name + ' vs ' + coldest.name + ')');
-        }
-      }
-
-      function updateTahoeUI() {
-        let bestSnow = null, deepest = null, coldestR = null, warmestR = null, windiestR = null, bestCond = null;
-        let bsV = -Infinity, dpV = -Infinity, clV = Infinity, wmV = -Infinity, wiV = -Infinity, bcV = -Infinity;
-
-        TAHOE_RESORTS.forEach(r => {
-          const d = tahoeDataMap.get(r.id);
-          if (!d) return;
-          const snowIn = (d.snowfall || 0) * CM_TO_INCHES;
-          const depthIn = (d.snowDepthM || 0) * M_TO_INCHES;
-          if (snowIn > bsV) { bsV = snowIn; bestSnow = r; }
-          if (depthIn > dpV) { dpV = depthIn; deepest = r; }
-          if (d.tempF !== null && d.tempF < clV) { clV = d.tempF; coldestR = r; }
-          if (d.tempF !== null && d.tempF > wmV) { wmV = d.tempF; warmestR = r; }
-          if (d.wind !== null && d.wind > wiV) { wiV = d.wind; windiestR = r; }
-          // Best conditions score
-          const score = depthIn * 10 + snowIn * 5 - Math.max(0, d.tempF - 32) * 2 - (d.wind || 0) * 0.5;
-          if (score > bcV) { bcV = score; bestCond = r; }
-        });
-
-        if (bestSnow) setText('tahoe-best-snow', bestSnow.name + ' ' + bsV.toFixed(1) + '"');
-        if (deepest) setText('tahoe-deepest', deepest.name + ' ' + dpV.toFixed(0) + '"');
-        if (coldestR) setText('tahoe-coldest', coldestR.name + ' ' + clV.toFixed(1) + '°F');
-        if (warmestR) setText('tahoe-warmest', warmestR.name + ' ' + wmV.toFixed(1) + '°F');
-        if (windiestR) setText('tahoe-windiest', windiestR.name + ' ' + wiV.toFixed(1) + ' mph');
-        if (bestCond) setText('tahoe-best-cond', bestCond.name);
-
-        // Differentials
-        if (bestSnow) setText('tahoe-diff-snow', bestSnow.name + ' · ' + bsV.toFixed(1) + '"');
-        if (deepest) setText('tahoe-diff-base', deepest.name + ' · ' + dpV.toFixed(0) + '"');
-        if (coldestR) setText('tahoe-diff-coldest', coldestR.name + ' · ' + clV.toFixed(1) + '°F');
-        if (warmestR) setText('tahoe-diff-warmest', warmestR.name + ' · ' + wmV.toFixed(1) + '°F');
-        if (windiestR) setText('tahoe-diff-windiest', windiestR.name + ' · ' + wiV.toFixed(1) + ' mph');
-
-        // Update cards
-        TAHOE_RESORTS.forEach(r => {
-          const d = tahoeDataMap.get(r.id);
-          if (!d) return;
-          const cached = tahoeElCache[r.id];
-          if (!cached) return;
-          cached.tempEl.textContent = d.tempF !== null ? d.tempF.toFixed(1) + '°F' : '—°F';
-          cached.tempEl.style.color = tahoeTempColor(d.tempF);
-          // Freeze badge
-          if (d.tempF !== null && d.tempF <= 32) {
-            cached.freezeEl.className = 'freeze-badge ' + safeClass('freezing');
-            cached.freezeEl.textContent = '❄ Freezing';
-          } else if (d.tempF !== null) {
-            cached.freezeEl.className = 'freeze-badge ' + safeClass('above');
-            cached.freezeEl.textContent = '△ Above Freeze';
-          }
-          const snowIn = (d.snowfall || 0) * CM_TO_INCHES;
-          const depthIn = (d.snowDepthM || 0) * M_TO_INCHES;
-          setText('tahoe-m-' + r.id + '-wind', d.wind !== null ? d.wind.toFixed(1) + ' mph' : '—');
-          setText('tahoe-m-' + r.id + '-snowfall', snowIn.toFixed(1) + ' in');
-          setText('tahoe-m-' + r.id + '-snowdepth', depthIn.toFixed(0) + ' in');
-          setText('tahoe-m-' + r.id + '-visibility', (DEFAULT_VISIBILITY_M / METERS_PER_MILE).toFixed(1) + ' mi');
-          setText('tahoe-m-' + r.id + '-cloudcover', d.cloud !== null ? d.cloud.toFixed(0) + '%' : '—');
-          setText('tahoe-m-' + r.id + '-condition', WEATHER_CODES[d.weatherCode] || '—');
-
-          // Ski condition tags
-          const tags = [];
-          if (snowIn > 2 && d.tempF < 30) tags.push({ cls: 'tag-powder', text: 'POWDER DAY' });
-          else if (snowIn > 0.5) tags.push({ cls: 'tag-snowing', text: 'SNOWING' });
-          if (d.tempF < 28 && depthIn > 24) tags.push({ cls: 'tag-epic', text: 'EPIC' });
-          else if (depthIn > 12) tags.push({ cls: 'tag-good', text: 'GOOD' });
-          else if (depthIn > 0) tags.push({ cls: 'tag-fair', text: 'FAIR' });
-          else tags.push({ cls: 'tag-nosnow', text: 'NO SNOW' });
-          if (d.wind > 40) tags.push({ cls: 'tag-windhold', text: 'WIND HOLD' });
-          if (d.tempF > 36 && d.precipitation > 0) tags.push({ cls: 'tag-rainonsnow', text: 'RAIN ON SNOW' });
-          if (d.tempF > 36) tags.push({ cls: 'tag-slushrisk', text: 'SLUSH RISK' });
-          renderTags(cached.tagsEl, tags);
-          cached.upd.textContent = 'Updated: ' + fmtTime();
-
-          // Popup (unbind first to prevent leak)
-          const marker = tahoeMarkers.get(r.id);
-          if (marker) {
-            if (marker.getPopup()) marker.unbindPopup();
-            const popup = document.createElement('div');
-            const h = document.createElement('strong'); h.textContent = r.name;
-            popup.appendChild(h);
-            const pre = document.createElement('pre');
-            pre.style.cssText = 'margin:4px 0;font-size:.78rem;font-family:JetBrains Mono,monospace;white-space:pre-wrap';
-            pre.textContent = (WEATHER_CODES[d.weatherCode] || '—') + '\nTemp: ' + (d.tempF !== null ? d.tempF.toFixed(1) + '°F' : '—') + '\nSnow: ' + snowIn.toFixed(1) + ' in | Base: ' + depthIn.toFixed(0) + ' in\nWind: ' + (d.wind !== null ? d.wind.toFixed(1) + ' mph' : '—');
-            popup.appendChild(pre);
-            marker.bindPopup(popup);
-          }
-        });
-
-        // Doc snapshot
-        const sorted = [...tahoeDataMap.entries()].map(([id, d]) => ({ r: TAHOE_RESORTS.find(x => x.id === id), d })).filter(x => x.r);
-        sorted.sort((a, b) => ((b.d.snowDepthM || 0) * 39.37) - ((a.d.snowDepthM || 0) * 39.37));
-        let doc = '# Tahoe Snow Report — ' + fmtTime() + '\n\n';
-        sorted.forEach(({ r, d }) => {
-          const depthIn = ((d.snowDepthM || 0) * 39.37);
-          doc += '⛷ ' + r.name + ' (' + r.area + ', ' + r.elev + 'ft)\n';
-          doc += '  Temp: ' + (d.tempF !== null ? d.tempF.toFixed(1) + '°F' : '—') + ' | Base: ' + depthIn.toFixed(0) + '" | ' + (WEATHER_CODES[d.weatherCode] || '—') + '\n\n';
-        });
-        el('tahoe-doc-snapshot').textContent = doc;
-
-        setText('tahoe-last-updated', fmtTime());
-        if (tahoeHeatLayer) tahoeHeatLayer.redraw();
-      }
-
-      /* ============ SEARCH + AUTOCOMPLETE (Nominatim) ============ */
-      let searchBusy = false;
-      let lastSearchTime = 0;
-      const acTimers = {};
-      const searchMarkers = new Map(); // map instance -> marker
-
-      function placeSearchMarker(map, lat, lon, label) {
-        // Remove previous search marker for this map
-        if (searchMarkers.has(map)) {
-          map.removeLayer(searchMarkers.get(map));
-        }
-        const icon = L.divIcon({
-          className: 'search-marker-dot',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12]
-        });
-        const marker = L.marker([lat, lon], { icon: icon, zIndexOffset: 2000 }).addTo(map);
-        const popupEl = document.createElement('div');
-        const strong = document.createElement('strong');
-        strong.textContent = '📍 ' + (label || 'Search Result');
-        popupEl.appendChild(strong);
-        popupEl.appendChild(document.createElement('br'));
-        const loadingText = document.createTextNode('Loading weather…');
-        popupEl.appendChild(loadingText);
-        marker.bindPopup(popupEl);
-        marker.openPopup();
-        searchMarkers.set(map, marker);
-
-        // Fetch live weather for this location
-        const fields = (map === tahoeMap)
-          ? 'temperature_2m,wind_speed_10m,relative_humidity_2m,cloud_cover,weather_code,precipitation,snowfall'
-          : 'temperature_2m,wind_speed_10m,relative_humidity_2m,cloud_cover,weather_code,precipitation';
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=' + fields + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/Los_Angeles';
-        fetchWithTimeout(url, 10000).then(r => r.json()).then(data => {
-          if (!data.current) return;
-          const c = data.current;
-          popupEl.removeChild(loadingText);
-          const pre = document.createElement('pre');
-          pre.style.cssText = 'margin:4px 0;font-size:.78rem;font-family:JetBrains Mono,monospace;white-space:pre-wrap';
-          let text = (WEATHER_CODES[c.weather_code] || '—')
-            + '\nTemp: ' + (c.temperature_2m != null ? c.temperature_2m.toFixed(1) + '°F' : '—')
-            + '\nWind: ' + (c.wind_speed_10m != null ? c.wind_speed_10m.toFixed(1) + ' mph' : '—')
-            + '\nHumidity: ' + (c.relative_humidity_2m != null ? c.relative_humidity_2m + '%' : '—')
-            + '\nCloud: ' + (c.cloud_cover != null ? c.cloud_cover + '%' : '—');
-          if (map === tahoeMap && c.snowfall != null) {
-            text += '\nSnowfall: ' + (c.snowfall * 0.3937).toFixed(1) + ' in';
-          }
-          if (c.precipitation > 0) {
-            text += '\nPrecip: ' + c.precipitation.toFixed(1) + ' mm';
-          }
-          pre.textContent = text;
-          popupEl.appendChild(pre);
-          marker.getPopup().update();
-        }).catch(() => {
-          loadingText.textContent = lat.toFixed(4) + ', ' + lon.toFixed(4);
-        });
-      }
-
-      async function nominatimQuery(q, viewbox, limit) {
-        const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&viewbox=' + viewbox + '&bounded=1&limit=' + limit;
-        const resp = await fetchWithTimeout(url, 8000);
-        return resp.json();
-      }
-
-      function hideAutocomplete(acId) {
-        const acEl = el(acId);
-        if (acEl) { acEl.classList.remove('visible'); acEl.innerHTML = ''; }
-      }
-
-      function showAutocomplete(acId, results, map, inputId) {
-        const acEl = el(acId);
-        if (!acEl) return;
-        acEl.innerHTML = '';
-        if (results.length === 0) { acEl.classList.remove('visible'); return; }
-        results.forEach(r => {
-          const lat = safeNum(r.lat, -90, 90, null);
-          const lon = safeNum(r.lon, -180, 180, null);
-          if (lat === null || lon === null) return;
-          const item = document.createElement('div');
-          item.className = 'autocomplete-item';
-          item.textContent = r.display_name;
-          item.addEventListener('click', () => {
-            el(inputId).value = r.display_name;
-            map.flyTo([lat, lon], 15);
-            placeSearchMarker(map, lat, lon, r.display_name.split(',')[0]);
-            if (map === tahoeMap) loadSnowHistoryForCoords(lat, lon, r.display_name.split(',')[0]);
-            hideAutocomplete(acId);
-          });
-          acEl.appendChild(item);
-        });
-        acEl.classList.add('visible');
-      }
-
-      function setupAutocomplete(inputId, acId, map, viewbox) {
-        const input = el(inputId);
-        input.addEventListener('input', () => {
-          clearTimeout(acTimers[inputId]);
-          const q = (input.value || '').trim();
-          if (!q || q.length < 3 || !allowlistRe.test(q)) { hideAutocomplete(acId); return; }
-          acTimers[inputId] = setTimeout(async () => {
-            const now = Date.now();
-            if (now - lastSearchTime < 1000) return;
-            lastSearchTime = now;
-            try {
-              const data = await nominatimQuery(q, viewbox, 5);
-              showAutocomplete(acId, data, map, inputId);
-            } catch (_) { hideAutocomplete(acId); }
-          }, 300);
-        });
-        input.addEventListener('keydown', e => {
-          if (e.key === 'Escape') hideAutocomplete(acId);
-        });
-        document.addEventListener('click', e => {
-          if (!input.contains(e.target) && !el(acId).contains(e.target)) hideAutocomplete(acId);
-        });
-      }
-
-      async function doSearch(inputId, statusId, acId, map, viewbox) {
-        hideAutocomplete(acId);
-        const now = Date.now();
-        if (searchBusy || now - lastSearchTime < 1000) {
-          setText(statusId, 'Please wait...');
-          return;
-        }
-        const input = el(inputId);
-        const q = (input.value || '').trim();
-        if (!q || !allowlistRe.test(q) || q.length > 120) {
-          setText(statusId, 'Invalid input');
-          return;
-        }
-        searchBusy = true;
-        lastSearchTime = Date.now();
-        setText(statusId, 'Searching...');
-        try {
-          const data = await nominatimQuery(q, viewbox, 1);
-          if (data.length > 0) {
-            const lat = safeNum(data[0].lat, -90, 90, null);
-            const lon = safeNum(data[0].lon, -180, 180, null);
-            if (lat !== null && lon !== null) {
-              map.flyTo([lat, lon], 15);
-              placeSearchMarker(map, lat, lon, data[0].display_name.split(',')[0]);
-              input.value = data[0].display_name;
-              if (map === tahoeMap) loadSnowHistoryForCoords(lat, lon, data[0].display_name.split(',')[0]);
-              setText(statusId, '✓ Found');
-            } else {
-              setText(statusId, 'Invalid result');
-            }
+            if (data.cloud !== null && prev.cloud !== null && Math.abs(data.cloud - prev.cloud) >= CLOUD_CHANGE_THRESHOLD)
+              log("update", "🌫", item.name + ": " + (data.cloud > prev.cloud ? "fogging in" : "clearing up") + " (" + data.cloud + "% cloud)");
+            if (data.precipitation > 0 && (!prev.precipitation || prev.precipitation === 0))
+              log("alert", "🌧", item.name + ": rain start (" + data.precipitation.toFixed(1) + "mm)");
+            if (data.precipitation === 0 && prev.precipitation > 0)
+              log("update", "☀️", item.name + ": rain stopped");
           } else {
-            setText(statusId, 'No results');
+            if (data.snowfall > 0 && (!prev.snowfall || prev.snowfall === 0))
+              log("alert", "❄️", item.name + ": snow start! " + data.snowfall.toFixed(1) + "cm");
+            if (data.snowfall === 0 && prev.snowfall > 0)
+              log("update", "🌤", item.name + ": snow stopped");
+            if (data.precipitation > 0 && data.tempF > 36)
+              log("alert", "🌧", item.name + ": RAIN ON SNOW! temp=" + data.tempF.toFixed(0) + "°F");
           }
-        } catch (e) {
-          setText(statusId, 'Error');
         }
-        searchBusy = false;
-        setTimeout(() => setText(statusId, ''), 3000);
+        dataMap.set(item.id, data);
+      });
+
+      // Snapshot prev data
+      prevData.clear();
+      dataMap.forEach((v, k) => prevData.set(k, Object.assign({}, v)));
+      onUpdate();
+      return true;
+    } catch (e) {
+      log("alert", "⚠️", "API fetch failed: " + e.message);
+      return false;
+    }
+  }
+
+  /* ============ SF UPDATE ============ */
+  function updateSFUI() {
+    let warmest = null, coldest = null, windiest = null, foggiest = null, humid = null;
+    let wT = -Infinity, cT = Infinity, wiW = -Infinity, foC = -Infinity, huH = -Infinity, precipCount = 0;
+    const sorted = [];
+
+    SF_NEIGHBORHOODS.forEach(nb => {
+      const d = sfDataMap.get(nb.id);
+      if (!d) return;
+      sorted.push({ nb, d });
+      if (d.tempF !== null && d.tempF > wT) { wT = d.tempF; warmest = nb; }
+      if (d.tempF !== null && d.tempF < cT) { cT = d.tempF; coldest = nb; }
+      if (d.wind !== null && d.wind > wiW) { wiW = d.wind; windiest = nb; }
+      if (d.cloud !== null && d.cloud > foC) { foC = d.cloud; foggiest = nb; }
+      if (d.humidity !== null && d.humidity > huH) { huH = d.humidity; humid = nb; }
+      if (d.precipitation > 0) precipCount++;
+    });
+
+    // Stats bar
+    if (warmest) setText("sf-warmest", warmest.name + " " + wT.toFixed(1) + "°F");
+    if (coldest) setText("sf-coldest", coldest.name + " " + cT.toFixed(1) + "°F");
+    if (warmest && coldest) setText("sf-spread", (wT - cT).toFixed(1) + "°F");
+    if (windiest) setText("sf-windiest", windiest.name + " " + wiW.toFixed(1) + " mph");
+    setText("sf-precip-count", precipCount > 0 ? precipCount + " zone" + (precipCount !== 1 ? "s" : "") : "None");
+
+    // Differentials
+    if (warmest) setText("sf-diff-warmest", warmest.name + " · " + wT.toFixed(1) + "°F");
+    if (coldest) setText("sf-diff-coldest", coldest.name + " · " + cT.toFixed(1) + "°F");
+    if (warmest && coldest) setText("sf-diff-delta", (wT - cT).toFixed(1) + "°F");
+    if (windiest) setText("sf-diff-windiest", windiest.name + " · " + wiW.toFixed(1) + " mph");
+    if (foggiest) setText("sf-diff-foggiest", foggiest.name + " · " + foC.toFixed(0) + "%");
+    if (humid) setText("sf-diff-humid", humid.name + " · " + huH.toFixed(0) + "%");
+
+    sorted.sort((a, b) => (b.d.tempF || 0) - (a.d.tempF || 0));
+
+    // Cards
+    SF_NEIGHBORHOODS.forEach(nb => {
+      const d = sfDataMap.get(nb.id);
+      if (!d) return;
+      const cached = sfElCache[nb.id];
+      if (!cached) return;
+
+      cached.tempEl.textContent = d.tempF !== null ? d.tempF.toFixed(1) + "°F" : "—°F";
+      cached.tempEl.style.color = sfTempColor(d.tempF);
+      setText("sf-m-" + nb.id + "-wind", d.wind !== null ? d.wind.toFixed(1) + " mph" : "—");
+      setText("sf-m-" + nb.id + "-humidity", d.humidity !== null ? d.humidity.toFixed(0) + "%" : "—");
+      setText("sf-m-" + nb.id + "-cloudcover", d.cloud !== null ? d.cloud.toFixed(0) + "%" : "—");
+      setText("sf-m-" + nb.id + "-condition", WEATHER_CODES[d.weatherCode] || "—");
+      setText("sf-m-" + nb.id + "-precipitation", d.precipitation.toFixed(1) + " mm");
+
+      const tags = [];
+      if (d.cloud >= 70) tags.push({ cls: "tag-fog", text: "Fog" });
+      if (d.cloud < 30 && d.weatherCode <= 1) tags.push({ cls: "tag-sunny", text: "Sunny" });
+      if (d.wind >= 15) tags.push({ cls: "tag-windy", text: "Windy" });
+      if (d.tempF >= 68) tags.push({ cls: "tag-warm", text: "Warm" });
+      if (d.tempF < 55) tags.push({ cls: "tag-cold", text: "Cold" });
+      if (d.humidity >= 80) tags.push({ cls: "tag-humid", text: "Humid" });
+      renderTags(cached.tagsEl, tags);
+
+      BORDER_CLASSES.forEach(c => cached.card.classList.remove(c));
+      if (warmest && nb.id === warmest.id) cached.card.classList.add("hottest");
+      if (coldest && nb.id === coldest.id) cached.card.classList.add("coldest");
+      if (foggiest && nb.id === foggiest.id) cached.card.classList.add("foggiest");
+      if (windiest && nb.id === windiest.id) cached.card.classList.add("windiest");
+      cached.upd.textContent = "Updated: " + fmtTime();
+
+      bindPopup(sfMarkers, nb.id, nb.name, [
+        WEATHER_CODES[d.weatherCode] || "—",
+        "Temp: " + (d.tempF !== null ? d.tempF.toFixed(1) + "°F" : "—"),
+        "Wind: " + (d.wind !== null ? d.wind.toFixed(1) + " mph" : "—"),
+        "Humidity: " + (d.humidity !== null ? d.humidity.toFixed(0) + "%" : "—"),
+        "Cloud: " + (d.cloud !== null ? d.cloud.toFixed(0) + "%" : "—")
+      ]);
+    });
+
+    // Doc snapshot
+    let doc = "# SF Microclimate Report — " + fmtTime() + "\n\n";
+    sorted.forEach(({ nb, d }) => {
+      doc += nb.emoji + " " + nb.name + " (" + nb.zone + ")\n";
+      doc += "  Temp: " + (d.tempF !== null ? d.tempF.toFixed(1) + "°F" : "—") + " | Wind: " + (d.wind !== null ? d.wind.toFixed(1) + " mph" : "—") + "\n";
+      doc += "  Cloud: " + (d.cloud !== null ? d.cloud.toFixed(0) + "%" : "—") + " | " + (WEATHER_CODES[d.weatherCode] || "—") + "\n\n";
+    });
+    $("sf-doc-snapshot").textContent = doc;
+
+    const now = fmtTime();
+    setText("sf-last-updated", now);
+    setText("footer-time", now);
+    if (sfHeatLayer) sfHeatLayer.redraw();
+
+    if (warmest && coldest && (wT - cT) >= DIVERGENCE_ALERT_THRESHOLD)
+      sfLog("alert", "🔥", "High divergence! Spread: " + (wT - cT).toFixed(1) + "°F (" + warmest.name + " vs " + coldest.name + ")");
+  }
+
+  /* ============ TAHOE UPDATE ============ */
+  function updateTahoeUI() {
+    let bestSnow = null, deepest = null, coldestR = null, warmestR = null, windiestR = null, bestCond = null;
+    let bsV = -Infinity, dpV = -Infinity, clV = Infinity, wmV = -Infinity, wiV = -Infinity, bcV = -Infinity, bestCondId = null;
+
+    TAHOE_RESORTS.forEach(r => {
+      const d = tahoeDataMap.get(r.id);
+      if (!d) return;
+      const snowIn = (d.snowfall || 0) * CM_TO_INCHES, depthIn = (d.snowDepthM || 0) * M_TO_INCHES;
+      if (snowIn > bsV) { bsV = snowIn; bestSnow = r; }
+      if (depthIn > dpV) { dpV = depthIn; deepest = r; }
+      if (d.tempF !== null && d.tempF < clV) { clV = d.tempF; coldestR = r; }
+      if (d.tempF !== null && d.tempF > wmV) { wmV = d.tempF; warmestR = r; }
+      if (d.wind !== null && d.wind > wiV) { wiV = d.wind; windiestR = r; }
+      const score = depthIn * 10 + snowIn * 5 - Math.max(0, d.tempF - 32) * 2 - (d.wind || 0) * 0.5;
+      if (score > bcV) { bcV = score; bestCond = r; bestCondId = r.id; }
+    });
+
+    if (bestSnow) setText("tahoe-best-snow", bestSnow.name + " " + bsV.toFixed(1) + '"');
+    if (deepest) setText("tahoe-deepest", deepest.name + " " + dpV.toFixed(0) + '"');
+    if (coldestR) setText("tahoe-coldest", coldestR.name + " " + clV.toFixed(1) + "°F");
+    if (windiestR) setText("tahoe-windiest", windiestR.name + " " + wiV.toFixed(1) + " mph");
+    if (bestCond) setText("tahoe-best-cond", bestCond.name);
+
+    if (bestSnow) setText("tahoe-diff-snow", bestSnow.name + " · " + bsV.toFixed(1) + '"');
+    if (deepest) setText("tahoe-diff-base", deepest.name + " · " + dpV.toFixed(0) + '"');
+    if (coldestR) setText("tahoe-diff-coldest", coldestR.name + " · " + clV.toFixed(1) + "°F");
+    if (warmestR) setText("tahoe-diff-warmest", warmestR.name + " · " + wmV.toFixed(1) + "°F");
+    if (windiestR) setText("tahoe-diff-windiest", windiestR.name + " · " + wiV.toFixed(1) + " mph");
+
+    TAHOE_RESORTS.forEach(r => {
+      const d = tahoeDataMap.get(r.id);
+      if (!d) return;
+      const cached = tahoeElCache[r.id];
+      if (!cached) return;
+      const snowIn = (d.snowfall || 0) * CM_TO_INCHES, depthIn = (d.snowDepthM || 0) * M_TO_INCHES;
+
+      cached.tempEl.textContent = d.tempF !== null ? d.tempF.toFixed(1) + "°F" : "—°F";
+      cached.tempEl.style.color = tahoeTempColor(d.tempF);
+
+      if (d.tempF !== null && d.tempF <= 32) {
+        cached.freezeEl.className = "freeze-badge freezing";
+        cached.freezeEl.textContent = "❄ Freezing";
+      } else if (d.tempF !== null) {
+        cached.freezeEl.className = "freeze-badge above";
+        cached.freezeEl.textContent = "△ Above Freeze";
       }
 
-      /* ============ 7-DAY SNOWFALL CHART ============ */
-      function loadSnowHistory(resortId) {
-        const resort = TAHOE_RESORTS.find(r => r.id === resortId);
-        if (!resort) return;
-        loadSnowHistoryForCoords(resort.lat, resort.lon, resort.name);
+      setText("tahoe-m-" + r.id + "-wind", d.wind !== null ? d.wind.toFixed(1) + " mph" : "—");
+      setText("tahoe-m-" + r.id + "-snowfall", snowIn.toFixed(1) + " in");
+      setText("tahoe-m-" + r.id + "-snowdepth", depthIn.toFixed(0) + " in");
+      setText("tahoe-m-" + r.id + "-visibility", (DEFAULT_VISIBILITY_M * M_TO_MILES).toFixed(1) + " mi");
+      setText("tahoe-m-" + r.id + "-cloudcover", d.cloud !== null ? d.cloud.toFixed(0) + "%" : "—");
+      setText("tahoe-m-" + r.id + "-condition", WEATHER_CODES[d.weatherCode] || "—");
+
+      const tags = [];
+      if (snowIn > 2 && d.tempF < 30) tags.push({ cls: "tag-powder", text: "POWDER DAY", alert: true });
+      else if (snowIn > 0.5) tags.push({ cls: "tag-snowing", text: "SNOWING" });
+      if (d.tempF < 28 && depthIn > 24) tags.push({ cls: "tag-epic", text: "EPIC", alert: true });
+      else if (depthIn > 12) tags.push({ cls: "tag-good", text: "GOOD" });
+      else if (depthIn > 0) tags.push({ cls: "tag-fair", text: "FAIR" });
+      else tags.push({ cls: "tag-nosnow", text: "NO SNOW" });
+      if (d.wind > 40) tags.push({ cls: "tag-windhold", text: "WIND HOLD", alert: true });
+      if (d.tempF > 36 && d.precipitation > 0) tags.push({ cls: "tag-rainonsnow", text: "RAIN ON SNOW", alert: true });
+      if (d.tempF > 36) tags.push({ cls: "tag-slushrisk", text: "SLUSH RISK" });
+      renderTags(cached.tagsEl, tags);
+      cached.upd.textContent = "Updated: " + fmtTime();
+
+      bindPopup(tahoeMarkers, r.id, r.name, [
+        WEATHER_CODES[d.weatherCode] || "—",
+        "Temp: " + (d.tempF !== null ? d.tempF.toFixed(1) + "°F" : "—"),
+        "Snow: " + snowIn.toFixed(1) + " in | Base: " + depthIn.toFixed(0) + " in",
+        "Wind: " + (d.wind !== null ? d.wind.toFixed(1) + " mph" : "—")
+      ]);
+    });
+
+    // Doc snapshot
+    const sorted = [...tahoeDataMap.entries()]
+      .map(([id, d]) => ({ r: TAHOE_RESORTS.find(x => x.id === id), d }))
+      .filter(x => x.r)
+      .sort((a, b) => ((b.d.snowDepthM || 0) * M_TO_INCHES) - ((a.d.snowDepthM || 0) * M_TO_INCHES));
+
+    let doc = "# Tahoe Snow Report — " + fmtTime() + "\n\n";
+    sorted.forEach(({ r, d }) => {
+      doc += "⛷ " + r.name + " (" + r.area + ", " + r.elev + "ft)\n";
+      doc += "  Temp: " + (d.tempF !== null ? d.tempF.toFixed(1) + "°F" : "—") + " | Base: " + ((d.snowDepthM || 0) * M_TO_INCHES).toFixed(0) + '" | ' + (WEATHER_CODES[d.weatherCode] || "—") + "\n\n";
+    });
+    $("tahoe-doc-snapshot").textContent = doc;
+
+    setText("tahoe-last-updated", fmtTime());
+    if (tahoeHeatLayer) tahoeHeatLayer.redraw();
+
+    // Auto-load snow chart for best conditions resort
+    if (!tahoeAutoLoaded && bestCondId) {
+      tahoeAutoLoaded = true;
+      loadSnowHistory(bestCondId);
+      tahoeLog("info", "📊", "Auto-loading 7-day history for " + bestCond.name + " (best conditions)");
+    }
+  }
+
+  /* ============ SEARCH ============ */
+  let searchBusy = false, lastSearchTime = 0;
+
+  async function doSearch(inputId, statusId, map, viewbox) {
+    const now = Date.now();
+    if (searchBusy || now - lastSearchTime < SEARCH_COOLDOWN_MS) { setText(statusId, "Please wait..."); return; }
+    const q = ($(inputId).value || "").trim();
+    if (!q || !allowlistRe.test(q) || q.length > SEARCH_MAX_LENGTH) { setText(statusId, "Invalid input"); return; }
+    searchBusy = true;
+    lastSearchTime = Date.now();
+    setText(statusId, "Searching...");
+    try {
+      const resp = await fetchWithTimeout("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(q) + "&viewbox=" + viewbox + "&bounded=1&limit=1", SEARCH_TIMEOUT_MS);
+      if (!resp.ok) { setText(statusId, "Error"); searchBusy = false; return; }
+      const data = await resp.json();
+      if (!Array.isArray(data)) { setText(statusId, "Invalid result"); searchBusy = false; return; }
+      if (data.length > 0) {
+        const lat = safeNum(data[0].lat, -90, 90, null), lon = safeNum(data[0].lon, -180, 180, null);
+        if (lat !== null && lon !== null) { map.flyTo([lat, lon], 15); setText(statusId, "✓ Found"); }
+        else setText(statusId, "Invalid result");
+      } else setText(statusId, "No results");
+    } catch (e) { console.error("Search failed:", e.message); setText(statusId, "Error"); }
+    searchBusy = false;
+    setTimeout(() => setText(statusId, ""), SEARCH_STATUS_CLEAR_MS);
+  }
+
+  /* ============ 7-DAY SNOWFALL CHART ============ */
+  async function loadSnowHistory(resortId) {
+    const resort = TAHOE_RESORTS.find(r => r.id === resortId);
+    if (!resort) return;
+    const hint = $("tahoe-snow-hint");
+    if (hint) hint.style.display = "none";
+    $("tahoe-snow-chart").style.display = "block";
+    setText("tahoe-snow-resort-name", resort.name);
+
+    try {
+      const resp = await fetchWithTimeout("https://api.open-meteo.com/v1/forecast?latitude=" + resort.lat + "&longitude=" + resort.lon + "&daily=snowfall_sum&past_days=7&forecast_days=0&timezone=America/Los_Angeles", SNOW_HISTORY_TIMEOUT_MS);
+      if (!resp.ok) {
+        tahoeLog("alert", "⚠️", "Snow history API returned HTTP " + resp.status);
+        return;
       }
+      const data = await resp.json();
+      if (!data.daily) return;
+      const days = Array.isArray(data.daily.time) ? data.daily.time : [];
+      const vals = Array.isArray(data.daily.snowfall_sum) ? data.daily.snowfall_sum : [];
+      const barsEl = $("tahoe-snow-bars");
+      clearChildren(barsEl);
+      const maxVal = Math.max(...vals.map(v => safeNum(v, 0, 1000, 0)), 0.1);
+      let total = 0;
+      days.forEach((day, i) => {
+        const v = safeNum(vals[i], 0, 1000, 0), inches = v * CM_TO_INCHES;
+        total += inches;
+        const wrap = mkEl("div", "snow-bar-wrap");
+        wrap.appendChild(mkEl("div", "snow-bar-label", inches.toFixed(1) + '"'));
+        const barArea = mkEl("div", "snow-bar-area");
+        const bar = mkEl("div", "snow-bar");
+        bar.style.height = Math.max(2, (v / maxVal) * 100) + "px";
+        const ratio = v / maxVal;
+        bar.style.background = `rgb(${Math.round(37 + 110 * ratio)},${Math.round(99 + 98 * ratio)},${Math.round(235 + 18 * ratio)})`;
+        barArea.appendChild(bar);
+        wrap.appendChild(barArea);
+        wrap.appendChild(mkEl("div", "snow-bar-day", day.slice(5)));
+        barsEl.appendChild(wrap);
+      });
+      setText("tahoe-snow-total", total.toFixed(1) + " inches");
+      tahoeLog("info", "📊", "Loaded 7-day history for " + resort.name);
+    } catch (e) {
+      tahoeLog("alert", "⚠️", "Failed to load snow history: " + e.message);
+    }
+  }
 
-      async function loadSnowHistoryForCoords(lat, lon, label) {
-        const hint = el('tahoe-snow-hint');
-        if (hint) hint.style.display = 'none';
-        el('tahoe-snow-bars').style.display = '';
-        el('tahoe-snow-total-wrap').style.display = '';
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&daily=snowfall_sum&past_days=7&forecast_days=0&timezone=America/Los_Angeles';
-        try {
-          const resp = await fetchWithTimeout(url, 10000);
-          const data = await resp.json();
-          if (!data.daily) return;
-          const days = data.daily.time || [];
-          const vals = data.daily.snowfall_sum || [];
-          const barsEl = el('tahoe-snow-bars');
-          while (barsEl.firstChild) barsEl.removeChild(barsEl.firstChild);
-          const maxVal = Math.max(...vals.map(v => safeNum(v, 0, 1000, 0)), 1);
-          let total = 0;
-          days.forEach((day, i) => {
-            const v = safeNum(vals[i], 0, 1000, 0);
-            const inches = v * CM_TO_INCHES;
-            total += inches;
-            const wrap = document.createElement('div'); wrap.className = 'snow-bar-wrap';
-            const bar = document.createElement('div'); bar.className = 'snow-bar';
-            const pct = (v / maxVal) * 100;
-            bar.style.height = Math.max(2, pct) + '%';
-            const ratio = pct / 100;
-            const r = Math.round(37 + (147 - 37) * ratio), g = Math.round(99 + (197 - 99) * ratio), b = Math.round(235 + (253 - 235) * ratio);
-            bar.style.background = 'rgb(' + r + ',' + g + ',' + b + ')';
-            const lbl = document.createElement('div'); lbl.className = 'snow-bar-label'; lbl.textContent = inches.toFixed(1) + '"';
-            const dayLbl = document.createElement('div'); dayLbl.className = 'snow-bar-day'; dayLbl.textContent = day.slice(5);
-            wrap.appendChild(lbl); wrap.appendChild(bar); wrap.appendChild(dayLbl);
-            barsEl.appendChild(wrap);
-          });
-          setText('tahoe-snow-total', total.toFixed(1) + ' inches');
-          tahoeLog('info', '📊', 'Loaded 7-day history for ' + label);
-        } catch (e) {
-          tahoeLog('alert', '⚠️', 'Failed to load snow history: ' + e.message);
-        }
+  /* ============ POLLING FACTORY ============ */
+  function createPoller(countdownId, fetchFn, log) {
+    let countdown = POLL_INTERVAL_SEC, timer = null;
+    async function cycle() {
+      countdown = POLL_INTERVAL_SEC;
+      log("info", "🔄", "Starting poll cycle...");
+      await fetchFn();
+      timer = setInterval(() => {
+        countdown--;
+        setText(countdownId, countdown);
+        if (countdown <= 0) { clearInterval(timer); cycle(); }
+      }, 1000);
+    }
+    return { start: cycle, get timer() { return timer; } };
+  }
+
+  const sfPoller = createPoller("sf-countdown",
+    () => fetchData(SF_NEIGHBORHOODS, "temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,weather_code,precipitation", false, sfDataMap, sfPrevData, sfLog, updateSFUI),
+    sfLog
+  );
+
+  const tahoePoller = createPoller("tahoe-countdown",
+    () => fetchData(TAHOE_RESORTS, "temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,weather_code,precipitation,snowfall,snow_depth", true, tahoeDataMap, tahoePrevData, tahoeLog, updateTahoeUI),
+    tahoeLog
+  );
+
+  /* ============ TAB SWITCHING ============ */
+  function switchTab(tabName) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    $("tab-" + tabName).classList.add("active");
+    $("content-" + tabName).classList.add("active");
+    if (tabName === "tahoe") {
+      if (!tahoeInitialized) {
+        const t = initMap("tahoe-map", [39.1, -120.1], 8, [[38.45, -120.65], [39.55, -119.65]], TAHOE_RESORTS, tahoeMarkers, "tahoe");
+        tahoeMap = t.map;
+        tahoeHeatLayer = t.overlay;
+        tahoeInitialized = true;
+        populateDropdown("tahoe-resort-select", TAHOE_RESORTS);
+        setTimeout(() => tahoeMap.invalidateSize(), MAP_RESIZE_DELAY_MS);
       }
+      if (!tahoePoller.timer) tahoePoller.start();
+    }
+    setTimeout(() => {
+      if (tabName === "sf" && sfMap) sfMap.invalidateSize();
+      if (tabName === "tahoe" && tahoeMap) tahoeMap.invalidateSize();
+    }, TAB_RESIZE_DELAY_MS);
+  }
 
-      /* ============ POLLING ============ */
-      let sfCountdown = POLL_INTERVAL_S, tahoeCountdown = POLL_INTERVAL_S;
-      let sfTimer, tahoeTimer;
-      function fmtCountdown(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  /* ============ INIT ============ */
+  function init() {
+    // Tabs
+    $("tab-sf").addEventListener("click", () => switchTab("sf"));
+    $("tab-tahoe").addEventListener("click", () => switchTab("tahoe"));
 
-      async function sfPollCycle() {
-        sfCountdown = POLL_INTERVAL_S;
-        sfLog('info', '🔄', 'Starting poll cycle...');
-        await fetchSFData();
-        sfTimer = setInterval(() => {
-          sfCountdown--;
-          setText('sf-countdown', fmtCountdown(sfCountdown));
-          if (sfCountdown <= 0) {
-            clearInterval(sfTimer);
-            sfPollCycle();
-          }
-        }, 1000);
+    // SF search
+    const sfSearchFn = () => doSearch("sf-search-input", "sf-search-status", sfMap, "-122.540,37.845,-122.355,37.698");
+    $("sf-search-btn").addEventListener("click", sfSearchFn);
+    $("sf-search-input").addEventListener("keydown", e => { if (e.key === "Enter") sfSearchFn(); });
+    $("sf-nbr-select").addEventListener("change", e => {
+      const nb = SF_NEIGHBORHOODS.find(n => n.id === e.target.value);
+      if (nb && sfMap) sfMap.flyTo([nb.lat, nb.lon], 15);
+    });
+
+    // Tahoe search
+    const tahoeSearchFn = () => doSearch("tahoe-search-input", "tahoe-search-status", tahoeMap, "-120.65,38.45,-119.65,39.55");
+    $("tahoe-search-btn").addEventListener("click", tahoeSearchFn);
+    $("tahoe-search-input").addEventListener("keydown", e => { if (e.key === "Enter") tahoeSearchFn(); });
+    $("tahoe-resort-select").addEventListener("change", e => {
+      const r = TAHOE_RESORTS.find(x => x.id === e.target.value);
+      if (r) { if (tahoeMap) tahoeMap.flyTo([r.lat, r.lon], 12); loadSnowHistory(r.id); }
+    });
+
+    // Log clear + filter
+    $("sf-log-clear").addEventListener("click", () => clearChildren($("sf-agent-log")));
+    $("tahoe-log-clear").addEventListener("click", () => clearChildren($("tahoe-agent-log")));
+    ["sf-log-filter", "tahoe-log-filter"].forEach(btnId => {
+      const btn = $(btnId);
+      const logId = btnId.replace("-log-filter", "-agent-log");
+      btn.addEventListener("click", () => { btn.classList.toggle("active"); $(logId).classList.toggle("changes-only"); });
+    });
+
+    // Build cards
+    buildCards("sf-cards-grid", SF_NEIGHBORHOODS, "sf",
+      ["Wind", "Humidity", "Cloud Cover", "Condition", "Precipitation"], sfElCache);
+
+    buildCards("tahoe-cards-grid", TAHOE_RESORTS, "tahoe",
+      ["Wind", "Snowfall", "Snow Depth", "Visibility", "Cloud Cover", "Condition"], tahoeElCache,
+      (card, item, cached) => {
+        const fr = mkEl("div", "freeze-badge");
+        fr.id = "tahoe-freeze-" + item.id;
+        card.appendChild(fr);
+        cached.freezeEl = fr;
       }
+    );
 
-      async function tahoePollCycle() {
-        tahoeCountdown = POLL_INTERVAL_S;
-        tahoeLog('info', '🔄', 'Starting poll cycle...');
-        await fetchTahoeData();
-        tahoeTimer = setInterval(() => {
-          tahoeCountdown--;
-          setText('tahoe-countdown', fmtCountdown(tahoeCountdown));
-          if (tahoeCountdown <= 0) {
-            clearInterval(tahoeTimer);
-            tahoePollCycle();
-          }
-        }, 1000);
-      }
+    // Init SF map
+    const sf = initMap("sf-map", [37.768, -122.447], 13, [[37.7, -122.55], [37.84, -122.34]], SF_NEIGHBORHOODS, sfMarkers, "sf");
+    sfMap = sf.map;
+    sfHeatLayer = sf.overlay;
+    populateDropdown("sf-nbr-select", SF_NEIGHBORHOODS);
 
-      /* ============ TAB SWITCHING ============ */
-      function switchTab(tabName) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        el('tab-' + tabName).classList.add('active');
-        el('content-' + tabName).classList.add('active');
-        if (tabName === 'tahoe') {
-          initTahoeMap();
-          if (!tahoeTimer) tahoePollCycle();
-        }
-        // Fix map sizes
-        setTimeout(() => {
-          if (tabName === 'sf' && sfMap) sfMap.invalidateSize();
-          if (tabName === 'tahoe' && tahoeMap) tahoeMap.invalidateSize();
-        }, 100);
-      }
+    // Boot
+    sfLog("init", "⚙️", "Agent initializing...");
+    sfLog("init", "⚙️", "Loading map tiles...");
+    sfLog("init", "⚙️", "Configuring 15 SF neighborhoods...");
+    sfLog("init", "⚙️", "Starting first API connection...");
+    sfPoller.start();
+  }
 
-      /* ============ INIT ============ */
-      function init() {
-        // Tab buttons
-        el('tab-sf').addEventListener('click', () => switchTab('sf'));
-        el('tab-tahoe').addEventListener('click', () => switchTab('tahoe'));
-
-        // SF search + autocomplete
-        const sfViewbox = '-122.540,37.845,-122.355,37.698';
-        el('sf-search-btn').addEventListener('click', () => doSearch('sf-search-input', 'sf-search-status', 'sf-autocomplete', sfMap, sfViewbox));
-        el('sf-search-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('sf-search-input', 'sf-search-status', 'sf-autocomplete', sfMap, sfViewbox); });
-        setupAutocomplete('sf-search-input', 'sf-autocomplete', sfMap, sfViewbox);
-
-        // SF neighborhood dropdown
-        el('sf-nbr-select').addEventListener('change', e => {
-          const nb = sfLookup.get(e.target.value);
-          if (nb && sfMap) sfMap.flyTo([nb.lat, nb.lon], 15);
-        });
-
-        // Tahoe resort dropdown
-        el('tahoe-resort-select').addEventListener('change', e => {
-          const id = e.target.value;
-          const r = tahoeLookup.get(id);
-          if (r) {
-            if (tahoeMap) tahoeMap.flyTo([r.lat, r.lon], 12);
-            loadSnowHistory(id);
-          }
-        });
-
-        // Clear buttons
-        el('sf-log-clear').addEventListener('click', () => { const log = el('sf-agent-log'); while (log.firstChild) log.removeChild(log.firstChild); });
-        el('tahoe-log-clear').addEventListener('click', () => { const log = el('tahoe-agent-log'); while (log.firstChild) log.removeChild(log.firstChild); });
-
-        // Cache log elements
-        sfLogEl = el('sf-agent-log');
-        tahoeLogEl = el('tahoe-agent-log');
-
-        // Init SF
-        sfLog('init', '⚙️', 'Agent initializing...');
-        sfLog('init', '⚙️', 'Loading map tiles...');
-        sfLog('init', '⚙️', 'Configuring 15 SF neighborhoods...');
-        initSFMap();
-        buildSFCards();
-        buildTahoeCards();
-        sfLog('init', '⚙️', 'Starting first API connection...');
-        sfPollCycle();
-      }
-
-      document.addEventListener('DOMContentLoaded', init);
-    })();
+  document.addEventListener("DOMContentLoaded", init);
+})();
   </script>
 </body>
-
 </html>
