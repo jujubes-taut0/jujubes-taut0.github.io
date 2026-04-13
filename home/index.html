@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>jujubes-taut0</title>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" crossorigin="anonymous">
+<style>
+  :root {
+    --yellow: #F5C542;
+    --yellow-light: #FFF3C4;
+    --yellow-glow: rgba(245, 197, 66, 0.15);
+    --bg: #F4F1EC;
+    --bg-dark: #EAE6DF;
+    --ink: #3A3632;
+    --ink-light: #8A8480;
+    --card-bg: rgba(255,255,255,0.6);
+    --cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M14 2 L16 10 L14 8 L12 10 Z' fill='%23F5C542'/%3E%3Cpath d='M14 26 L12 18 L14 20 L16 18 Z' fill='%23F5C542'/%3E%3Cpath d='M2 14 L10 12 L8 14 L10 16 Z' fill='%23F5C542'/%3E%3Cpath d='M26 14 L18 16 L20 14 L18 12 Z' fill='%23F5C542'/%3E%3Ccircle cx='14' cy='14' r='2.5' fill='%23F5C542'/%3E%3C/svg%3E") 14 14;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* --- base + cursor --- */
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: var(--cursor), default;
+  }
+
+  /* --- pixel grid bg --- */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--bg-dark) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-dark) 1px, transparent 1px);
+    background-size: 24px 24px;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* --- floating alien --- */
+  .alien {
+    position: fixed;
+    top: 32px;
+    right: 12%;
+    font-size: 64px;
+    z-index: 0;
+    animation: hop 3s ease-in-out infinite;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.08));
+    user-select: none;
+    pointer-events: none;
+  }
+  .alien::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.06);
+    animation: shadow 3s ease-in-out infinite;
+  }
+
+  @keyframes hop {
+    0%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-20px); }
+    50% { transform: translateY(0); }
+    60% { transform: translateY(-10px); }
+    70% { transform: translateY(0); }
+  }
+  @keyframes shadow {
+    0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.06; }
+    40% { transform: translateX(-50%) scale(0.6); opacity: 0.03; }
+    50% { transform: translateX(-50%) scale(1); opacity: 0.06; }
+    60% { transform: translateX(-50%) scale(0.75); opacity: 0.04; }
+    70% { transform: translateX(-50%) scale(1); opacity: 0.06; }
+  }
+
+  /* --- layout --- */
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  /* --- header --- */
+  .header {
+    margin-bottom: 56px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .header h1 {
+    font-family: 'Silkscreen', cursive;
+    font-size: 2.4rem;
+    color: var(--yellow);
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.06);
+    margin-bottom: 12px;
+  }
+  .header p {
+    font-size: 0.85rem;
+    color: var(--ink-light);
+    line-height: 1.6;
+    max-width: 480px;
+  }
+  .blink {
+    display: inline-block;
+    animation: blink 1s step-end infinite;
+    color: var(--yellow);
+    font-weight: 700;
+  }
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  /* --- sections --- */
+  .section {
+    margin-bottom: 48px;
+  }
+  .section-label {
+    font-family: 'Silkscreen', cursive;
+    font-size: 0.75rem;
+    color: var(--yellow);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: repeating-linear-gradient(
+      90deg, var(--yellow) 0 4px, transparent 4px 8px
+    );
+    opacity: 0.4;
+  }
+  .writing-label {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-left: -12px;
+    transition: all 0.2s ease;
+    cursor: default;
+  }
+  .writing-label:hover {
+    border-color: var(--yellow);
+    background: var(--yellow-glow);
+  }
+
+  /* --- project cards --- */
+  .card {
+    display: block;
+    background: var(--card-bg);
+    backdrop-filter: blur(8px);
+    border: 2px solid var(--yellow);
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .card::before {
+    content: '>';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Silkscreen', cursive;
+    font-size: 1.1rem;
+    color: var(--yellow);
+    transition: transform 0.2s ease;
+  }
+  .card:hover {
+    background: var(--yellow-glow);
+    transform: translateX(4px);
+    box-shadow: -4px 4px 0 var(--yellow);
+  }
+  .card:hover::before {
+    transform: translateY(-50%) translateX(4px);
+  }
+  .card-title {
+    font-family: 'Silkscreen', cursive;
+    font-size: 0.95rem;
+    color: var(--yellow);
+    margin-bottom: 4px;
+  }
+  .card-desc {
+    font-size: 0.78rem;
+    color: var(--ink-light);
+    line-height: 1.5;
+    padding-right: 30px;
+  }
+
+  /* --- inline graphics --- */
+  .sf-scene {
+    display: inline-block;
+    vertical-align: -3px;
+    margin: 0 2px;
+  }
+
+  /* --- tag badges --- */
+  .tag {
+    display: inline-block;
+    font-family: 'Silkscreen', cursive;
+    font-size: 0.55rem;
+    color: var(--yellow);
+    border: 1.5px solid var(--yellow);
+    border-radius: 2px;
+    padding: 2px 7px;
+    margin-right: 6px;
+    margin-top: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  /* --- coming soon --- */
+  .card.soon {
+    border-style: dashed;
+    opacity: 0.55;
+    cursor: default;
+  }
+  .card.soon:hover {
+    transform: none;
+    box-shadow: none;
+    background: var(--card-bg);
+  }
+  .card.soon::before {
+    content: '...';
+  }
+  .card.soon:hover::before {
+    transform: translateY(-50%);
+  }
+  .soon-badge {
+    font-family: 'Silkscreen', cursive;
+    font-size: 0.55rem;
+    background: var(--yellow-light);
+    color: var(--yellow);
+    border-radius: 2px;
+    padding: 2px 7px;
+    margin-left: 8px;
+    letter-spacing: 1px;
+  }
+
+  /* --- article list --- */
+  .article-link {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-left: -12px;
+    margin-right: -12px;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: all 0.15s ease;
+  }
+  .article-link + .article-link {
+    border-top: 1px dashed var(--bg-dark);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+  .article-link:hover {
+    padding-left: 16px;
+    color: var(--yellow);
+    border-color: var(--yellow);
+    border-radius: 8px;
+    background: var(--yellow-glow);
+  }
+  .article-link .bullet {
+    font-family: 'Silkscreen', cursive;
+    color: var(--yellow);
+    font-size: 0.7rem;
+    flex-shrink: 0;
+  }
+  .article-link .a-title {
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  .article-link .a-source {
+    font-size: 0.65rem;
+    color: var(--ink-light);
+    margin-left: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* --- footer --- */
+  .footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 2px solid var(--yellow);
+    font-size: 0.7rem;
+    color: var(--ink-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer a {
+    color: var(--yellow);
+    text-decoration: none;
+    font-family: 'Silkscreen', cursive;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 6px 14px;
+    transition: all 0.2s ease;
+  }
+  .footer a:hover {
+    border-color: var(--yellow);
+    background: var(--yellow-glow);
+    box-shadow: 0 0 12px rgba(245, 197, 66, 0.2);
+  }
+
+  /* --- animations --- */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section:nth-child(2) { animation: fadeUp 0.6s 0.1s ease both; }
+  .section:nth-child(3) { animation: fadeUp 0.6s 0.2s ease both; }
+  .section:nth-child(4) { animation: fadeUp 0.6s 0.3s ease both; }
+  .section:nth-child(5) { animation: fadeUp 0.6s 0.4s ease both; }
+
+  /* --- mobile --- */
+  @media (max-width: 520px) {
+    .header h1 { font-size: 1.7rem; }
+    .wrapper { padding: 40px 16px 60px; }
+    .alien { font-size: 40px; right: 16px; top: 20px; }
+    .article-link .a-source { display: none; }
+    .footer { flex-direction: column; gap: 8px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="alien">&#x1F47E;</div>
+
+<div class="wrapper">
+
+  <div class="header">
+    <h1>jujubes-taut0<span class="blink">_</span></h1>
+    <p>security compliance + a collection of tools, templates, and whatever else i felt like building and writing.</p>
+  </div>
+
+  <!-- PROJECTS -->
+  <div class="section">
+    <div class="section-label">Projects</div>
+
+    <a href="https://jujubes-taut0.github.io/channel67" class="card" target="_blank" rel="noopener noreferrer">
+      <div class="card-title">channel67</div>
+      <div class="card-desc">for the unhinged who need to know if the Mission is sunny while its fogged in 2 miles away in Outer Sunset (and whether Tahoe got enough powder to justify calling in sick tomorrow) <svg class="sf-scene" width="56" height="16" viewBox="0 0 56 16"><!-- cloud L --><path d="M0 14 Q0 10 4 10 Q4 6 8 6 Q10 2 14 4 Q16 2 18 4 Q22 3 22 7 Q26 8 26 12 Q26 14 24 14 Z" fill="none" stroke="#B0ADA6" stroke-width="1.2" stroke-linejoin="round"/><circle cx="10" cy="9" r="0.7" fill="#B0ADA6"/><circle cx="14" cy="9" r="0.7" fill="#B0ADA6"/><path d="M11 11 Q12 12.2 13 11" fill="none" stroke="#B0ADA6" stroke-width="0.7" stroke-linecap="round"/><!-- bridge --><line x1="24" y1="14" x2="32" y2="14" stroke="#C0392B" stroke-width="1.2"/><line x1="26" y1="7" x2="26" y2="14" stroke="#C0392B" stroke-width="1.2"/><line x1="30" y1="7" x2="30" y2="14" stroke="#C0392B" stroke-width="1.2"/><path d="M24 13 Q26 7 28 10 Q30 7 32 13" fill="none" stroke="#C0392B" stroke-width="0.8"/><!-- cloud R --><path d="M30 14 Q30 10 34 10 Q34 6 38 6 Q40 2 44 4 Q46 2 48 4 Q52 3 52 7 Q56 8 56 12 Q56 14 54 14 Z" fill="none" stroke="#B0ADA6" stroke-width="1.2" stroke-linejoin="round"/><circle cx="40" cy="9" r="0.7" fill="#B0ADA6"/><circle cx="44" cy="9" r="0.7" fill="#B0ADA6"/><path d="M41 11 Q42 12.2 43 11" fill="none" stroke="#B0ADA6" stroke-width="0.7" stroke-linecap="round"/></svg> &#x1F3C2;</div>
+      <span class="tag">weather</span>
+      <span class="tag">live</span>
+    </a>
+  </div>
+
+  <!-- TEMPLATES -->
+  <div class="section">
+    <div class="section-label">Templates & Resources</div>
+
+    <div class="card soon">
+      <div class="card-title">Secure Code Guidelines <span class="soon-badge">soon</span></div>
+      <div class="card-desc">A starter template for writing secure code - practical checks your team can actually use.</div>
+      <span class="tag">compliance</span>
+      <span class="tag">dev</span>
+    </div>
+
+    <div class="card soon">
+      <div class="card-title">Code Audit Checklist <span class="soon-badge">soon</span></div>
+      <div class="card-desc">Lightweight framework for auditing code against common security and compliance standards.</div>
+      <span class="tag">compliance</span>
+      <span class="tag">audit</span>
+    </div>
+  </div>
+
+  <!-- WRITING -->
+  <div class="section">
+    <div class="section-label writing-label">Check out my writing!</div>
+
+    <a href="https://optro.ai/blog/iso-surveillance-audits" class="article-link" target="_blank" rel="noopener noreferrer">
+      <span class="bullet">*</span>
+      <span class="a-title">ISO Surveillance Audits</span>
+      <span class="a-source">optro.ai</span>
+    </a>
+
+    <a href="https://optro.ai/blog/nist-csf-2" class="article-link" target="_blank" rel="noopener noreferrer">
+      <span class="bullet">*</span>
+      <span class="a-title">NIST CSF 2.0</span>
+      <span class="a-source">optro.ai</span>
+    </a>
+
+    <div class="article-link" style="cursor: default; opacity: 0.5;">
+      <span class="bullet">*</span>
+      <span class="a-title">RSA 2026 Briefing Paper <span class="soon-badge">soon</span></span>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>built with caffeine and curiosity</span>
+    <a href="https://jujubes-taut0.github.io/" target="_blank" rel="noopener noreferrer"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: -2px; margin-right: 5px;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>github</a>
+  </div>
+
+</div>
+
+</body>
+</html>
