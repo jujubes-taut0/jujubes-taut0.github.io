@@ -4,18 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Instant Redirect Meta Tag (Backup for JS) -->
     <meta http-equiv="refresh" content="0; url=rickroll.mp4">
     <title>Loading...</title>
 </head>
 
 <body>
     <script>
-        // 1. Fire-and-forget tracking
-        // This runs in the background even if the page unloads immediately
-        navigator.sendBeacon("https://api.counterapi.dev/v1/jujubes-taut0/rickroll/up");
-
-        // 2. Instant JS Redirect
+        navigator.sendBeacon("https://dahliasgiggle8i.goatcounter.com/count", JSON.stringify({p: "/rickroll"}));
         window.location.replace("rickroll.mp4");
     </script>
 </body>
